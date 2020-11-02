@@ -1,0 +1,62 @@
+#
+# Copyright (c) 2019 Lexmark International, Inc
+#
+# SPDX-License-Identifier: See LICENSE.lxk
+#
+
+
+menuconfig JAKE_CRYPTO_ANCHOR
+	select JAKE_FAULT_HANDLER
+	select CPLUSPLUS
+	select LIB_CPLUSPLUS
+	bool "Enable Crypto Anchor application"
+	help
+	  Say y to enable the Crypto Anchor application
+
+config BARCODE_2D
+       bool "Enable 2-D barcode reader"
+       default y
+
+config CAMERA_EEPROM
+       bool "Enable EEPROM support"
+       default y
+
+config HOST_VERIFICATION
+       bool "Enable host verification"
+       default n
+
+config PANEL_ILI9341
+       bool "Enable ILITEK panel"
+       default y
+
+config PANEL_ST7735
+       bool "Enable ST7735 panel"
+       default n
+
+config TOUCH_FT6206
+       bool "Enable FT6206 touch interface"
+       default y
+
+config PANEL_ROTATED
+       bool "Is panel landscape"
+       default y
+
+config BRISK
+       bool "Include brisk support"
+       default n
+
+config CAMERA_FAKE_DATA
+       bool "Enable Fake Data input"
+       default y
+
+config CAMERA_OPENMV
+       bool "Enable openmv camera"
+       default n
+
+config CAMERA_SENIS
+       bool "Enable Senis camera"
+       default n
+
+config SENIS_FAKE_BUSY
+       bool "Enable Fake Busy signal for Senis support"
+       default n
