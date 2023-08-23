@@ -62,24 +62,8 @@ zephyr_compile_definitions( MODEM_HAL_DBG_TRACE=0 )
 
 # zephyr_compile_options( -Wextra -Werror )
 
-
-#        src/gnss.c
-#        src/gnss_scan.c
-
-#        src/gpio_mapper.c
-
 set(sources
-        src/LoRa_task.c
-        src/bt_task.c
-        src/debug_gpio.c
-        src/gatt_config_service.c
-        src/led_task.c
         src/main.c
-        src/rtc.c
-        src/uart_task.c
-        src/vars.c
-        src/wdt_task.c
-        src/stubs.c
 )
 
 # Main app
