@@ -4,7 +4,7 @@
 
 zephyr_library()
 
-zephyr_library_include_directories( )
+zephyr_library_include_directories( ./pe4259 )
 
 
 zephyr_library_sources(
@@ -18,3 +18,4 @@ zephyr_library_sources(
 )
 
 add_subdirectory(accel)
+add_subdirectory(pe4259)

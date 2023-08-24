@@ -1,4 +1,5 @@
 #include <zephyr/kernel.h>
+#include "pe4259.h"
 #include "smtc_modem_api.h"
 
 #define WIFI_PRIORITY   (4)
@@ -40,20 +41,37 @@ void wifi_thread (void *p1, void *p2, void *p3)
       wifi_data[] = {
       0x01, // MAC with RSSI
 
-      0xc0, 0xff, 0xd4, 0x87, 0x70, 0xa0,
-      -86,
+#if 0
+      -70,
+      0x94, 0xF3, 0x92, 0x8B, 0x0D, 0xC1,
 
-      0x20, 0x4e, 0x7f, 0x2b, 0x71, 0x28,
-      -90,
-
-      0x98, 0xde, 0xd0, 0x7d, 0x5a, 0xed,
       -77,
+      0xAC, 0x71, 0x2E, 0x83, 0x06, 0x01,
 
-      0x14, 0x91, 0x82, 0xfc, 0x36, 0xa5,
+      -85,
+      0x94, 0xF3, 0x92, 0x8A, 0x5F, 0x81,
+
+      -45,
+      0xAC, 0x71, 0x2E, 0x82, 0xEB, 0xC1,
+
+#else
+
+      -86,
+      0xc0, 0xff, 0xd4, 0x87, 0x70, 0xa0,
+
+      -90,
+      0x20, 0x4e, 0x7f, 0x2b, 0x71, 0x28,
+
+      -77,
+      0x98, 0xde, 0xd0, 0x7d, 0x5a, 0xed,
+
       -84,
+      0x14, 0x91, 0x82, 0xfc, 0x36, 0xa5,
 
+      -87,
       0xcc, 0x40, 0xd0, 0x01, 0x5b, 0xdc,
-      -87
+#endif
+
    };
 
    /*
@@ -67,10 +85,23 @@ void wifi_thread (void *p1, void *p2, void *p3)
    } while (rc);
 
    while(1) {
-          rc = smtc_modem_request_uplink(0, 197, 1, wifi_data, sizeof(wifi_data));
-          printk("%s %d uplink rc: %d size: %d \n", __func__, __LINE__, rc, sizeof(wifi_data) );
 
-          k_sleep(K_MSEC(30000));
+      /*
+       * Need to connect the antenna to the LR1110.
+       */
+      pe4259_select(PE4259_SELECT_RF_WIFI);
+
+      /*
+       * Perform the wifi scan.
+       */
+
+      /*
+       * upload the wifi data.
+       */
+      rc = smtc_modem_request_uplink(0, 197, 1, wifi_data, sizeof(wifi_data));
+      printk("%s %d uplink rc: %d size: %d \n", __func__, __LINE__, rc, sizeof(wifi_data) );
+
+      k_sleep(K_MSEC(30000));
    }
 }
 
