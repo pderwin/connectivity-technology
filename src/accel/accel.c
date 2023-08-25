@@ -1,31 +1,3 @@
-#if 0
-
-
-Write 57h into CTRL_REG1 // Turn on the sensor, enable X, Y, and Z
-// ODR = 100 Hz
-
-Write 09h into CTRL_REG2 // High-pass filter enabled on interrupt activity 1
-Write 40h into CTRL_REG3 // Interrupt activity 1 driven to INT1 pad
-Write 00h into CTRL_REG4 // FS = ±2 g
-Write 08h into CTRL_REG5 // Interrupt 1 pin latched
-Write10h into INT1_THS // Threshold = 250 mg
-Write 00h into INT1_DURATION // Duration = 0
-Read REFERENCE
-// Dummy read to force the HP filter to
-// current acceleration value
-// (i.e. set reference acceleration/tilt value)
-Write 2Ah into INT1_CFG // Configure desired wake-up event
-Poll INT1 pad; if INT1 = 0 then go to 9 // Poll INT1 pin waiting for the wake-up event DO your code here.
-Read INT1_SRC // Return the event that has triggered the
-// interrupt and clear interrupt
-(Insert your code here) // Event handling
-Go to 9
-
-
-#endif
-
-
-
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/init.h>
@@ -46,10 +18,9 @@ static void set_full_scale         (const struct device *device);
 static void set_sampling_frequency (const struct device *device);
 static void set_threshold          (const struct device *device);
 
-static struct sensor_trigger accel_trigger = {
-   .type = SENSOR_TRIG_DELTA,
-//   .type = SENSOR_TRIG_DATA_READY,  // int1
-//   .chan = SENSOR_CHAN_ACCEL_XYZ
+static struct sensor_trigger accel_trigger =
+{
+   .type = SENSOR_TRIG_DELTA
 };
 
 static void accel_callback ()
@@ -84,11 +55,6 @@ static void accel_thread (void *p1, void *p2, void *p3)
       rc;
 
    /*
-    * Set trigger callback.
-    */
-   sensor_trigger_set(accel_device, &accel_trigger, accel_callback);
-
-   /*
     * Change the sampling frequency
     */
    set_sampling_frequency(accel_device);
@@ -108,6 +74,12 @@ static void accel_thread (void *p1, void *p2, void *p3)
     */
    set_configuration(accel_device);
 
+   /*
+    * Set trigger callback.
+    */
+   sensor_trigger_set(accel_device, &accel_trigger, accel_callback);
+
+
    while(1) {
       printk("%s: fetch \n", __func__);
 
@@ -121,7 +93,7 @@ static void accel_thread (void *p1, void *p2, void *p3)
 static void set_configuration (const struct device *device)
 {
    struct sensor_value sensor_value = {
-      .val1 = LIS2DH_HPIS2_EN_BIT
+      .val1 = LIS2DH_HPIS1_EN_BIT
    };
 
    sensor_attr_set(accel_device,

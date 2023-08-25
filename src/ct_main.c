@@ -18,7 +18,7 @@ int ct_main(const struct device *device)
 
    semtracker_thread_start();
 
-//   accel_init();
+   accel_init();
 
    wifi_thread_start();
 
