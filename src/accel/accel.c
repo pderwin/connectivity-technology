@@ -11,8 +11,6 @@
 
 static const struct device       *accel_device = DEVICE_DT_GET(DT_ALIAS(accel0));
 
-static const struct gpio_dt_spec vdd_sensor_en = GPIO_DT_SPEC_INST_GET(0, vdd_sensor_en_gpios );
-
 static void set_configuration      (const struct device *device);
 static void set_full_scale         (const struct device *device);
 static void set_sampling_frequency (const struct device *device);
@@ -81,10 +79,10 @@ static void accel_thread (void *p1, void *p2, void *p3)
 
 
    while(1) {
-      printk("%s: fetch \n", __func__);
+//      printk("%s: fetch \n", __func__);
 
       rc = sensor_sample_fetch(accel_device);
-      printk("sample rc: %d \n", rc);
+//      printk("sample rc: %d \n", rc);
 
       k_sleep(K_MSEC(5000));
    }
@@ -162,6 +160,9 @@ void accel_init (void)
       K_NO_WAIT);
 }
 
+#ifndef CONFIG_BOARD_MOKO_LW008
+static const struct gpio_dt_spec vdd_sensor_en = GPIO_DT_SPEC_INST_GET(0, vdd_sensor_en_gpios );
+
 int sigsense_power_up (const struct device *device)
 {
    /*
@@ -174,3 +175,4 @@ int sigsense_power_up (const struct device *device)
 }
 
 SYS_INIT(sigsense_power_up, POST_KERNEL, CONFIG_I2C_INIT_PRIORITY);
+#endif
