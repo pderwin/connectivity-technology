@@ -1,5 +1,6 @@
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/trace.h>
 #include <zephyr/devicetree.h>
 #include "pe4259.h"
 
@@ -11,6 +12,8 @@ void pe4259_select(pe4259_select_e select)
    uint32_t
       ctrl_val,
       vdd_val;
+
+   TRACE1(TAG_PE4259_SELECT, select);
 
    switch(select) {
        case PE4259_SELECT_RF1:
