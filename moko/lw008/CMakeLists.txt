@@ -78,6 +78,8 @@ target_sources(app PRIVATE ${sources})
 
 zephyr_include_directories( ${APPS}/common )
 
+zephyr_include_directories( ${CONNECTIVITY_TECHNOLOGY}/src/pe4259 )
+
 zephyr_include_directories( ${GEOLOCATION_MIDDLEWARE}/common )
 zephyr_include_directories( ${GEOLOCATION_MIDDLEWARE}/gnss/src )
 zephyr_include_directories( ${GEOLOCATION_MIDDLEWARE}/wifi/src )
