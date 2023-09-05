@@ -4,6 +4,7 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/sensor.h>
 #include "accel.h"
+#include "led.h"
 #include "lis2dh.h"  // chip bit definitions from Zephyr source tree
 
 #define ACCEL_PRIORITY 3
@@ -16,10 +17,14 @@ static void set_full_scale         (const struct device *device);
 static void set_sampling_frequency (const struct device *device);
 static void set_threshold          (const struct device *device);
 
+static uint32_t
+    accel_has_called_back;
+
 static struct sensor_trigger accel_trigger =
 {
    .type = SENSOR_TRIG_DELTA
 };
+
 
 static void accel_callback ()
 {
@@ -36,6 +41,7 @@ static void accel_callback ()
    sensor_channel_get(accel_device, SENSOR_CHAN_ACCEL_Y, &y_sensor_value);
    sensor_channel_get(accel_device, SENSOR_CHAN_ACCEL_Z, &z_sensor_value);
 
+#if 0
    printk("X: %d.%d Y: %d.%d z: %d.%d\n",
           x_sensor_value.val1,
           x_sensor_value.val2,
@@ -45,13 +51,41 @@ static void accel_callback ()
 
           z_sensor_value.val1,
           z_sensor_value.val2);
+#endif
+
+   accel_has_called_back = 1;
+
+   /*
+    * Turn the blue LED on for a half second.
+    */
+   led_command(LED_BLUE, LED_CMD_BLINK_ONCE, 500);
+}
+
+/*-------------------------------------------------------------------------
+ *
+ * name:        accel_has_moved
+ *
+ * description: return value of flag that says accelerometer has generated
+ *              an interrupt.
+ *
+ * input:       none
+ *
+ * output:      0 - accel has not moved
+ *              1 - accel has moved.
+ *
+ *-------------------------------------------------------------------------*/
+uint32_t accel_has_moved (void)
+{
+   uint32_t
+      rc = accel_has_called_back;
+
+   accel_has_called_back = 0;
+
+   return rc;
 }
 
 static void accel_thread (void *p1, void *p2, void *p3)
 {
-   uint32_t
-      rc;
-
    /*
     * Change the sampling frequency
     */
@@ -77,15 +111,14 @@ static void accel_thread (void *p1, void *p2, void *p3)
     */
    sensor_trigger_set(accel_device, &accel_trigger, accel_callback);
 
-
+#if 0
    while(1) {
-//      printk("%s: fetch \n", __func__);
 
       rc = sensor_sample_fetch(accel_device);
-//      printk("sample rc: %d \n", rc);
 
       k_sleep(K_MSEC(5000));
    }
+#endif
 }
 
 static void set_configuration (const struct device *device)

@@ -1,6 +1,7 @@
 #pragma once
 
-void accel_init (void);
+uint32_t accel_has_moved (void);
+void     accel_init      (void);
 
 
 #include <zephyr/types.h>
@@ -68,5 +69,3 @@ uint32_t lr11xx_get_dio1_pin_state(struct lr11xx_data *dev_data);
 void lr11xx_dio1_irq_enable(struct lr11xx_data *dev_data);
 
 void lr11xx_dio1_irq_disable(struct lr11xx_data *dev_data);
-
-int lr11xx_variant_init(const struct device *dev);
