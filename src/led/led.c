@@ -72,7 +72,6 @@ static void handle_timeout (void)
       switch(led->state) {
 
           case LED_STATE_BLINK_ONCE:
-             printk("%s %d blink once %d %d \n", __func__, __LINE__, uptime, led->timeout);
 
              if (uptime >= led->timeout) {
                 led->state = LED_STATE_IDLE;

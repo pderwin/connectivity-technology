@@ -17,6 +17,8 @@ static void set_full_scale         (const struct device *device);
 static void set_sampling_frequency (const struct device *device);
 static void set_threshold          (const struct device *device);
 
+extern void semtracker_thread_wakeup (void);
+
 static uint32_t
     accel_has_called_back;
 
@@ -26,7 +28,19 @@ static struct sensor_trigger accel_trigger =
 };
 
 
-static void accel_callback ()
+/*-------------------------------------------------------------------------
+ *
+ * name:        accel_callback
+ *
+ * description: This is called while in the GPIO interrupt handler for the
+ *              accelerometer.
+ *
+ * input:
+ *
+ * output:
+ *
+ *-------------------------------------------------------------------------*/
+static void accel_callback (const struct device *device, const struct sensor_trigger *sensor_trigger)
 {
    uint32_t
       rc;
@@ -34,6 +48,9 @@ static void accel_callback ()
       x_sensor_value,
       y_sensor_value,
       z_sensor_value;
+
+   (void) device;
+   (void) sensor_trigger;
 
    rc = sensor_sample_fetch(accel_device);
 
@@ -59,6 +76,12 @@ static void accel_callback ()
     * Turn the blue LED on for a half second.
     */
    led_command(LED_BLUE, LED_CMD_BLINK_ONCE, 500);
+
+   /*
+    * Wake the semtracker thread.
+    */
+   semtracker_thread_wakeup();
+
 }
 
 /*-------------------------------------------------------------------------

@@ -13,8 +13,6 @@ void pe4259_select(pe4259_select_e select)
       ctrl_val,
       vdd_val;
 
-   TRACE1(TAG_PE4259_SELECT, select);
-
    switch(select) {
        case PE4259_SELECT_RF1:
           ctrl_val = 1;
@@ -28,6 +26,8 @@ void pe4259_select(pe4259_select_e select)
           printk("%s: Error -- invalid selection: %x from %p \n", __func__, select,__builtin_return_address(0) );
           return;
    }
+
+   TRACE2(TAG_PE4259_SELECT, ctrl_val, vdd_val);
 
    gpio_pin_set_dt(&ctrl, ctrl_val);
    gpio_pin_set_dt(&vdd,  vdd_val);

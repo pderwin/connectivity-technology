@@ -20,12 +20,9 @@ int ct_main(const struct device *device)
 
    accel_init();
 
-   wifi_thread_start();
-
    printk("%s: initialization complete\n", __func__);
 
    return 0;
 }
-
 
 SYS_INIT(ct_main, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);

@@ -59,6 +59,7 @@ zephyr_compile_definitions( REGION_US_915=1 )
 zephyr_compile_definitions( LR11XX=1 )
 zephyr_compile_definitions( LR11XX_TRANSCEIVER=1 )
 zephyr_compile_definitions( MODEM_HAL_DBG_TRACE=0 )
+zephyr_compile_definitions( TASK_EXTENDED_2 )
 
 # zephyr_compile_options( -Wextra -Werror )
 

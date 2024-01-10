@@ -33,34 +33,27 @@ extern ralf_t
 extern tracker_ctx_t
     tracker_ctx;
 
-// #define LED_W_NODE DT_ALIAS(ledw)
-// static const struct gpio_dt_spec led_w = GPIO_DT_SPEC_INST_GET(LED_W_NODE, gpios);
-
 static uint32_t tracker_app_is_tracker_in_static_mode (void)
 {
    return false;
 }
 
-void wifi_thread (void *p1, void *p2, void *p3)
+static uint32_t
+    wifi_ready;
+
+void wifi_init (void)
 {
    mw_version_t
       mw_version;
    smtc_modem_return_code_t
       rc;
-
-   (void) p1;
-   (void) p2;
-   (void) p3;
-
    /*
-    * Wait for link to come up
+    * If link is not up, then bail.
     */
-   do {
-      rc =  smtc_modem_lorawan_request_link_check(0);
-
-      k_sleep(K_MSEC(1000));
-
-   } while (rc);
+   rc =  smtc_modem_lorawan_request_link_check(0);
+   if (rc) {
+      return;
+   }
 
    wifi_mw_get_version( &mw_version );
    printk( "Initializing Wi-Fi middleware v%d.%d.%d\n", mw_version.major, mw_version.minor,
@@ -69,21 +62,22 @@ void wifi_thread (void *p1, void *p2, void *p3)
    /* Initialize Wi-Fi middleware */
    wifi_mw_init( tracker_modem_radio, stack_id );
 
-   while (1) {
+   wifi_ready = 1;
+}
 
-      if (accel_has_moved()) {
-         /*
-          * Perform the wifi scan.
-          */
-         printk( "Start Wi-Fi scan\n" );
-         wifi_mw_scan_start( 0 );
-      }
+void wifi_scan_start (void)
+{
 
-      /*
-       * Pace the WiFi scan at no quicker than every 30 seconds.
-       */
-      k_sleep(K_MSEC(30000));
+   if (!wifi_ready) {
+      printk("%s: Wifi is not ready for use\n", __func__);
+      return;
    }
+
+   /*
+    * Perform the wifi scan.
+    */
+   printk( "%s: Start Wi-Fi scan\n", __func__ );
+   wifi_mw_scan_start( 0 );
 }
 
 void on_wifi_event( uint8_t pending_events )
@@ -119,6 +113,8 @@ void on_wifi_event( uint8_t pending_events )
          /*
           * Send this payload to port 197
           */
+         printk("%s %d sending packet to port 197 (from %p) \n", __func__, __LINE__, __builtin_return_address(0) );
+
          rc = smtc_modem_request_uplink(0, 197, 1, wifi_data, sizeof(wifi_data));
          printk("%s %d uplink rc: %d size: %d \n", __func__, __LINE__, rc, sizeof(wifi_data) );
       }
@@ -194,8 +190,10 @@ void on_wifi_event( uint8_t pending_events )
 // PHIL            smtc_board_hall_effect_enable( false );
 
          HAL_DBG_TRACE_MSG( "Switch static mode\n" );
+#if (ENABLE_GNSS > 0)
          gnss_mw_scan_aggregate( true );
          gnss_mw_scan_start( GNSS_MW_MODE_STATIC, tracker_ctx.static_scan_interval - sequence_duration_sec );
+#endif
       }
       else
       {
@@ -205,8 +203,10 @@ void on_wifi_event( uint8_t pending_events )
          }
 
          HAL_DBG_TRACE_MSG( "Continue in mobile mode\n" );
+#if (ENABLE_GNSS > 0)
          gnss_mw_scan_aggregate( false );
          gnss_mw_scan_start( GNSS_MW_MODE_MOBILE, tracker_ctx.mobile_scan_interval - sequence_duration_sec );
+#endif
       }
    }
 
@@ -221,6 +221,8 @@ static void create_wifi_location_packet(uint8_t *packet, uint32_t packet_size, w
       i;
    wifi_scan_single_result_t
       *wsr;
+
+   printk("%s %d (from %px) \n", __func__, __LINE__, __builtin_return_address(0) );
 
    /*
     * First byte is always a 1 to signify MAC values with RSSI
@@ -264,21 +266,4 @@ static void create_wifi_location_packet(uint8_t *packet, uint32_t packet_size, w
        */
       count += 7;
    }
-}
-
-
-K_THREAD_STACK_DEFINE(wifi_stack, WIFI_STACK_SIZE);
-struct k_thread	wifi_thread_data;
-
-void wifi_thread_start(void)
-{
-   k_tid_t tid;
-
-   tid = k_thread_create(&wifi_thread_data, wifi_stack,
-                         K_THREAD_STACK_SIZEOF(wifi_stack),
-                         wifi_thread,
-                         NULL, NULL,	NULL,
-                         WIFI_PRIORITY, 0, K_NO_WAIT);
-
-   k_thread_name_set(tid, "wifi");
 }
