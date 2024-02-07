@@ -60,14 +60,14 @@ static void accel_callback (const struct device *device, const struct sensor_tri
 
 #if 0
    printk("X: %d.%d Y: %d.%d z: %d.%d\n",
-          x_sensor_value.val1,
-          x_sensor_value.val2,
+	  x_sensor_value.val1,
+	  x_sensor_value.val2,
 
-          y_sensor_value.val1,
-          y_sensor_value.val2,
+	  y_sensor_value.val1,
+	  y_sensor_value.val2,
 
-          z_sensor_value.val1,
-          z_sensor_value.val2);
+	  z_sensor_value.val1,
+	  z_sensor_value.val2);
 #endif
 
    accel_has_called_back = 1;
@@ -75,13 +75,12 @@ static void accel_callback (const struct device *device, const struct sensor_tri
    /*
     * Turn the blue LED on for a half second.
     */
-   led_command(LED_BLUE, LED_CMD_BLINK_ONCE, 500);
+   led_command(LED_GREEN, LED_CMD_BLINK_ONCE, 500);
 
    /*
     * Wake the semtracker thread.
     */
    semtracker_thread_wakeup();
-
 }
 
 /*-------------------------------------------------------------------------
@@ -151,9 +150,9 @@ static void set_configuration (const struct device *device)
    };
 
    sensor_attr_set(accel_device,
-                   SENSOR_CHAN_ACCEL_XYZ,
-                   SENSOR_ATTR_CONFIGURATION,
-                   &sensor_value);
+		   SENSOR_CHAN_ACCEL_XYZ,
+		   SENSOR_ATTR_CONFIGURATION,
+		   &sensor_value);
 }
 static void set_full_scale (const struct device *device)
 {
@@ -163,9 +162,9 @@ static void set_full_scale (const struct device *device)
    };
 
    sensor_attr_set(accel_device,
-                   SENSOR_CHAN_ACCEL_XYZ,
-                   SENSOR_ATTR_FULL_SCALE,
-                   &sensor_value);
+		   SENSOR_CHAN_ACCEL_XYZ,
+		   SENSOR_ATTR_FULL_SCALE,
+		   &sensor_value);
 }
 
 static void set_sampling_frequency (const struct device *device)
@@ -175,9 +174,9 @@ static void set_sampling_frequency (const struct device *device)
    };
 
    sensor_attr_set(accel_device,
-                   SENSOR_CHAN_ACCEL_XYZ,
-                   SENSOR_ATTR_SAMPLING_FREQUENCY,
-                   &sensor_value);
+		   SENSOR_CHAN_ACCEL_XYZ,
+		   SENSOR_ATTR_SAMPLING_FREQUENCY,
+		   &sensor_value);
 }
 
 static void set_threshold (const struct device *device)
@@ -192,9 +191,9 @@ static void set_threshold (const struct device *device)
    };
 
    sensor_attr_set(device,
-                   SENSOR_CHAN_ACCEL_XYZ,
-                   SENSOR_ATTR_SLOPE_TH,
-                   &sensor_value);
+		   SENSOR_CHAN_ACCEL_XYZ,
+		   SENSOR_ATTR_SLOPE_TH,
+		   &sensor_value);
 }
 
 
@@ -215,20 +214,3 @@ void accel_init (void)
       0,
       K_NO_WAIT);
 }
-
-#ifndef CONFIG_BOARD_MOKO_LW008
-static const struct gpio_dt_spec vdd_sensor_en = GPIO_DT_SPEC_INST_GET(0, vdd_sensor_en_gpios );
-
-int sigsense_power_up (const struct device *device)
-{
-   /*
-    * Need to configure the VDD_SENSOR_EN gpio and drive it high to turn power on to the sense card.
-    */
-   gpio_pin_configure_dt(&vdd_sensor_en, GPIO_OUTPUT_ACTIVE);
-   gpio_pin_set_dt(&vdd_sensor_en, 1);
-
-   return 0;
-}
-
-SYS_INIT(sigsense_power_up, POST_KERNEL, CONFIG_I2C_INIT_PRIORITY);
-#endif
