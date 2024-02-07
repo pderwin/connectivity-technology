@@ -1,13 +1,13 @@
 #pragma once
 
 typedef enum {
-   LED_WHITE,
-   LED_BLUE,
-   LED_GREEN
+   LED_GREEN,
+   LED_RED
 } led_id_e;
 
 typedef enum {
-   LED_CMD_BLINK_ONCE,
+   LED_CMD_BLINK,        /* blink continuously */
+   LED_CMD_BLINK_ONCE,   /* blink one time     */
 } led_cmd_e;
 
 

@@ -13,8 +13,8 @@ typedef struct {
 
 typedef enum {
    LED_STATE_IDLE,
+   LED_STATE_BLINK,
    LED_STATE_BLINK_ONCE,
-   LED_STATE_BLINK_REPEAT,
 
 } led_state_e;
 
@@ -28,10 +28,12 @@ typedef struct {
 
    led_state_e
        state;
+   uint32_t
+       blink_rate;  // timeout for each blink of the LED.  Set from msg->arg.
 
    uint32_t
-       timeout;
+       timeout;  // value computed that will be the uptime when the next transition occurs.
    uint32_t
-       val;   // selected state via message
+       value;   // Current LED value
 
 } led_t;
