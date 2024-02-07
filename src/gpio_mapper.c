@@ -1,3 +1,4 @@
+#include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/trace.h>
@@ -229,13 +230,13 @@ int gpio_mapper (const struct device *device)
     */
    for (i=0; i<48; i++) {
       if (i != RESET_GPIO) {
-         GET_PORT_PIN(i);
+	 GET_PORT_PIN(i);
 
-         new = gpio_pin_get(device, pin);
+	 new = gpio_pin_get(device, pin);
 
-         if (new != before[i]) {
-            printk("GPIO %d changed state\n", i);
-         }
+	 if (new != before[i]) {
+	    printk("GPIO %d changed state\n", i);
+	 }
 
       }
    }
@@ -283,7 +284,7 @@ void gpio_mapper_compare_all(void)
       new = gpio_pin_get(device, pin);
 
       if (new != before[i]) {
-         printk("GPIO %d changed state\n", i);
+	 printk("GPIO %d changed state\n", i);
       }
 
    }
@@ -312,13 +313,13 @@ int gpio_mapper (const struct device *device)
       gpio_pin_configure(device, pin, GPIO_OUTPUT_ACTIVE);
 
       for (j=0; j<10; j++) {
-         k_sleep(K_MSEC(DELAY_MS));
+	 k_sleep(K_MSEC(DELAY_MS));
 
-         gpio_pin_set(device, pin, 0);
+	 gpio_pin_set(device, pin, 0);
 
-         k_sleep(K_MSEC(DELAY_MS));
+	 k_sleep(K_MSEC(DELAY_MS));
 
-         gpio_pin_set(device, pin, 1);
+	 gpio_pin_set(device, pin, 1);
       } // 10 iterations
 
       gpio_pin_configure(device, pin, GPIO_INPUT);
