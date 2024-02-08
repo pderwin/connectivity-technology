@@ -134,11 +134,31 @@ static void accel_thread (void *p1, void *p2, void *p3)
    sensor_trigger_set(accel_device, &accel_trigger, accel_callback);
 
 #if 0
-   while(1) {
+   {
+      uint32_t
+	 rc;
 
-      rc = sensor_sample_fetch(accel_device);
+      while(1) {
 
-      k_sleep(K_MSEC(5000));
+	 rc = sensor_sample_fetch(accel_device);
+	 printk("%s %d sensor_sample_fetch rc: %d \n", __func__,__LINE__, rc );
+
+	 sensor_channel_get(accel_device, SENSOR_CHAN_ACCEL_X, &x_sensor_value);
+	 sensor_channel_get(accel_device, SENSOR_CHAN_ACCEL_Y, &y_sensor_value);
+	 sensor_channel_get(accel_device, SENSOR_CHAN_ACCEL_Z, &z_sensor_value);
+
+	 printk("X: %d.%d Y: %d.%d z: %d.%d\n",
+		x_sensor_value.val1,
+		x_sensor_value.val2,
+
+		y_sensor_value.val1,
+		y_sensor_value.val2,
+
+		z_sensor_value.val1,
+		z_sensor_value.val2);
+
+	 k_sleep(K_MSEC(1000));
+      }
    }
 #endif
 }
