@@ -3,13 +3,7 @@
 #include <zephyr/drivers/trace.h>
 #include "debug_gpio.h"
 
-static const struct device *gpio0_dev = DEVICE_DT_GET(DT_NODELABEL(gpio0));
-
-#define GPIO_RTS  (7)   // works
-// #define GPIO_ACCEL_INT2 (4)
-
-#define GPIO_RX GPIO_RTS  // works
-// #define GPIO_TX GPIO_ACCEL_INT2
+static const struct gpio_dt_spec debug_gpio_0 = GPIO_DT_SPEC_GET(DT_NODELABEL(debug_gpio_0), gpios);
 
 /*-------------------------------------------------------------------------
  *
@@ -30,9 +24,11 @@ void debug_gpio_clear (void)
 
 void debug_gpio_init (void)
 {
-   gpio_pin_configure(gpio0_dev, GPIO_RX, GPIO_OUTPUT_ACTIVE);
+   return;
+
+   gpio_pin_configure_dt(&debug_gpio_0, GPIO_OUTPUT_ACTIVE);
 #ifdef GPIO_TX
-   gpio_pin_configure(gpio0_dev, GPIO_TX, GPIO_OUTPUT_ACTIVE);
+   gpio_pin_configure_dt(gpio0_dev, GPIO_OUTPUT_ACTIVE);
 #endif
    debug_gpio_clear();
 }
@@ -41,25 +37,21 @@ void debug_gpio_error (void)
 {
 //   TRACE1(TAG_GPIO_ERROR, __builtin_return_address(0) );
 
-   if (gpio0_dev) {
-      gpio_pin_set(gpio0_dev, GPIO_RX, 1);
+   gpio_pin_set_dt(&debug_gpio_0, 1);
 #ifdef GPIO_TX
-      gpio_pin_set(gpio0_dev, GPIO_TX, 1);
+   gpio_pin_set(gpio0_dev, GPIO_TX, 1);
 #endif
-      k_busy_wait(10);
+   k_busy_wait(10);
 
-      gpio_pin_set(gpio0_dev, GPIO_RX, 0);
+   gpio_pin_set_dt(&debug_gpio_0, 0);
 #ifdef GPIO_TX
-      gpio_pin_set(gpio0_dev, GPIO_TX, 0);
+   gpio_pin_set(gpio0_dev, GPIO_TX, 0);
 #endif
-   }
 }
 
 void debug_gpio_rx (uint32_t state)
 {
-   if (gpio0_dev) {
-      gpio_pin_set(gpio0_dev, GPIO_RX, state);
-   }
+   gpio_pin_set_dt(&debug_gpio_0, state);
 }
 
 void debug_gpio_tx (uint32_t state)
