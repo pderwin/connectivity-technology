@@ -3,6 +3,7 @@
 #include <zephyr/init.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/sensor.h>
+#include "smtc_modem_api.h"
 #include "accel.h"
 #include "led.h"
 #include "lis2dh.h"  // chip bit definitions from Zephyr source tree
@@ -58,18 +59,6 @@ static void accel_callback (const struct device *device, const struct sensor_tri
    sensor_channel_get(accel_device, SENSOR_CHAN_ACCEL_Y, &y_sensor_value);
    sensor_channel_get(accel_device, SENSOR_CHAN_ACCEL_Z, &z_sensor_value);
 
-#if 0
-   printk("X: %d.%d Y: %d.%d z: %d.%d\n",
-	  x_sensor_value.val1,
-	  x_sensor_value.val2,
-
-	  y_sensor_value.val1,
-	  y_sensor_value.val2,
-
-	  z_sensor_value.val1,
-	  z_sensor_value.val2);
-#endif
-
    accel_has_called_back = 1;
 
    /*
@@ -77,10 +66,12 @@ static void accel_callback (const struct device *device, const struct sensor_tri
     */
    led_command(LED_GREEN, LED_CMD_BLINK_ONCE, 500);
 
+   rc = smtc_modem_request_uplink(0, 111, 1, "Hello World", 11);
+
    /*
     * Wake the semtracker thread.
     */
-   semtracker_thread_wakeup();
+   //  semtracker_thread_wakeup();
 }
 
 /*-------------------------------------------------------------------------
