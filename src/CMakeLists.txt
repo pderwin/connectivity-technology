@@ -19,3 +19,4 @@ zephyr_library_sources(
 add_subdirectory(accel)
 add_subdirectory(led)
 add_subdirectory(pe4259)
+add_subdirectory(temperature_humidity)

@@ -6,6 +6,7 @@
 void bt_thread_start(void);
 void led_thread_start(void);
 void semtracker_thread_start (void);
+void temperature_humidity_init (void);
 void wifi_thread_start (void);
 
 int ct_main(void)
@@ -18,6 +19,8 @@ int ct_main(void)
    semtracker_thread_start();
 
    accel_init();
+
+   temperature_humidity_init();
 
    /*
     * Make the green LED blink until further notice.
