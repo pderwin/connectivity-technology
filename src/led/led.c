@@ -9,7 +9,7 @@
 #define LED_STACK_SIZE (1024)
 
 static void handle_msg (msg_t *msg);
-static void led_set    (led_t *led, uint32_t val, uint32_t duration);
+static void led_set (led_t *led, uint32_t val, uint32_t duration);
 
 static led_t leds[] = {
    {
@@ -22,7 +22,7 @@ static led_t leds[] = {
    }
 };
 
-static void gpio_configure(void);
+static void gpio_configure (void);
 
 /*
  * Define a message type.
@@ -34,7 +34,7 @@ static void handle_msg (msg_t *msg)
    uint32_t
       i;
    led_t
-      *led;
+   *led;
 
    /*
     * Find the correct LED structure based on the id.
@@ -55,28 +55,35 @@ static void handle_msg (msg_t *msg)
 
    switch(msg->cmd) {
 
-       case LED_CMD_BLINK:
+   case LED_CMD_BLINK:
 
-	  led->state      = LED_STATE_BLINK;
-	  led->blink_rate = msg->arg;
+      led->state      = LED_STATE_BLINK;
+      led->blink_rate = msg->arg;
 
-	  /*
-	   * Turn the LED on, and set timeout for turn-off
-	   */
-	  led_set(led, 1, led->blink_rate);
+      /*
+       * Turn the LED on, and set timeout for turn-off
+       */
+      led_set(led, 1, led->blink_rate);
 
-	  break;
+      break;
 
-       case LED_CMD_BLINK_ONCE:
+   case LED_CMD_BLINK_ONCE:
 
-	  led->state = LED_STATE_BLINK_ONCE;
-	  led_set(led, 1, msg->arg);
+      led->state = LED_STATE_BLINK_ONCE;
+      led_set(led, 1, msg->arg);
 
-	  break;
+      break;
 
-       default:
-	  printk("%s: unknown command: %x \n", __func__, msg->cmd);
-	  return;
+   case LED_CMD_SET:
+
+      led->state = LED_STATE_IDLE;
+      led_set(led, msg->arg, 0);
+
+      break;
+
+   default:
+      printk("%s: unknown command: %x \n", __func__, msg->cmd);
+      return;
    }
 }
 
@@ -86,7 +93,7 @@ static void handle_timeout (void)
       i,
       uptime;
    led_t
-      *led;
+   *led;
 
 
    uptime = k_uptime_get();
@@ -97,23 +104,23 @@ static void handle_timeout (void)
 
       switch(led->state) {
 
-	  case LED_STATE_BLINK:
+      case LED_STATE_BLINK:
 
-	     if (uptime >= led->timeout) {
-		led_set(led, led->value ^ 1, led->blink_rate);
-	     }
-	     break;
+	 if (uptime >= led->timeout) {
+	    led_set(led, led->value ^ 1, led->blink_rate);
+	 }
+	 break;
 
-	  case LED_STATE_BLINK_ONCE:
+      case LED_STATE_BLINK_ONCE:
 
-	     if (uptime >= led->timeout) {
-		led->state = LED_STATE_IDLE;
-		led_set(led, 0, 0);
-	     }
-	     break;
+	 if (uptime >= led->timeout) {
+	    led->state = LED_STATE_IDLE;
+	    led_set(led, 0, 0);
+	 }
+	 break;
 
-	  default:
-	     break;
+      default:
+	 break;
       }
    }
 }
@@ -145,7 +152,7 @@ void led_command (led_id_e id, led_cmd_e cmd, uint32_t arg)
  * output:
  *
  *-------------------------------------------------------------------------*/
-static void led_set(led_t *led, uint32_t value, uint32_t duration)
+static void led_set (led_t *led, uint32_t value, uint32_t duration)
 {
    /*
     * Set current state.
@@ -161,7 +168,18 @@ static void led_set(led_t *led, uint32_t value, uint32_t duration)
    led->timeout = k_uptime_get() + duration;
 }
 
-void led_thread (void *p1, void *p2, void *p3)
+/*-------------------------------------------------------------------------
+ *
+ * name:        led_thread
+ *
+ * description:
+ *
+ * input:
+ *
+ * output:
+ *
+ *-------------------------------------------------------------------------*/
+static void led_thread (void *p1, void *p2, void *p3)
 {
    uint32_t
       rc;
@@ -198,7 +216,7 @@ void led_thread (void *p1, void *p2, void *p3)
    }
 }
 
-static void gpio_configure(void)
+static void gpio_configure (void)
 {
    uint32_t
       i;
@@ -213,16 +231,27 @@ static void gpio_configure(void)
 }
 
 K_THREAD_STACK_DEFINE(led_stack, LED_STACK_SIZE);
-struct k_thread	led_thread_data;
+struct k_thread led_thread_data;
 
-void led_thread_start(void)
+/*-------------------------------------------------------------------------
+ *
+ * name:        led_init
+ *
+ * description: Startup LED thread to handle our two LEDs.
+ *
+ * input:       none
+ *
+ * output:      none
+ *
+ *-------------------------------------------------------------------------*/
+void led_init (void)
 {
    k_tid_t tid;
 
    tid = k_thread_create(&led_thread_data, led_stack,
 			 K_THREAD_STACK_SIZEOF(led_stack),
 			 led_thread,
-			 NULL, NULL,	NULL,
+			 NULL, NULL,    NULL,
 			 LED_PRIORITY, 0, K_NO_WAIT);
 
    k_thread_name_set(tid, "led");
