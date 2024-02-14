@@ -12,8 +12,3 @@ STUB(hal_mcu_get_vref_level);
 STUB(hal_mcu_delay_ms);
 STUB(hal_mcu_get_tick);
 STUB(hal_mcu_partial_sleep_enable);
-
-void hal_mcu_set_sleep_for_ms (uint32_t mSecs)
-{
-   k_sleep(K_MSEC(mSecs));
-}
