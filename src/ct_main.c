@@ -2,6 +2,7 @@
 #include <zephyr/init.h>
 #include "accel.h"
 #include "led.h"
+#include "pir.h"
 
 void bt_thread_start(void);
 void led_thread_start(void);
@@ -21,6 +22,11 @@ int ct_main(void)
    accel_init();
 
    temperature_humidity_init();
+
+   /*
+    * Startup the PIR sensor
+    */
+   pir_init();
 
    /*
     * Make the green LED blink until further notice.
