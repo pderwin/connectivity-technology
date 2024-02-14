@@ -6,7 +6,7 @@
 #include "apps_utilities.h"
 #include "mw_assert.h"
 #include "pe4259.h"
-#include "smtc_board.h"
+// #include "smtc_board.h"
 #include "smtc_hal_dbg_trace.h"
 #include "smtc_modem_api.h"
 #include "tracker_utility.h"
@@ -57,7 +57,7 @@ void wifi_init (void)
 
    wifi_mw_get_version( &mw_version );
    printk( "Initializing Wi-Fi middleware v%d.%d.%d\n", mw_version.major, mw_version.minor,
-           mw_version.patch );
+	   mw_version.patch );
 
    /* Initialize Wi-Fi middleware */
    wifi_mw_init( tracker_modem_radio, stack_id );
@@ -97,7 +97,7 @@ void on_wifi_event( uint8_t pending_events )
    if( wifi_mw_has_event( pending_events, WIFI_MW_EVENT_SCAN_DONE ) ) {
 
       wifi_mw_event_data_scan_done_t
-         wifi_scan_results;
+	 wifi_scan_results;
 
       HAL_DBG_TRACE_INFO( "Wi-Fi middleware event - SCAN DONE\n" );
 
@@ -108,18 +108,18 @@ void on_wifi_event( uint8_t pending_events )
        */
       if (wifi_scan_results.nbr_results) {
 
-         create_wifi_location_packet(wifi_data, sizeof(wifi_data), &wifi_scan_results);
+	 create_wifi_location_packet(wifi_data, sizeof(wifi_data), &wifi_scan_results);
 
-         /*
-          * Send this payload to port 197
-          */
-         printk("%s %d sending packet to port 197 (from %p) \n", __func__, __LINE__, __builtin_return_address(0) );
+	 /*
+	  * Send this payload to port 197
+	  */
+	 printk("%s %d sending packet to port 197 (from %p) \n", __func__, __LINE__, __builtin_return_address(0) );
 
-         rc = smtc_modem_request_uplink(0, 197, 1, wifi_data, sizeof(wifi_data));
-         printk("%s %d uplink rc: %d size: %d \n", __func__, __LINE__, rc, sizeof(wifi_data) );
+	 rc = smtc_modem_request_uplink(0, 197, 1, wifi_data, sizeof(wifi_data));
+	 printk("%s %d uplink rc: %d size: %d \n", __func__, __LINE__, rc, sizeof(wifi_data) );
       }
       else {
-         printk("No Wifi APs found\n");
+	 printk("No Wifi APs found\n");
       }
 
 
@@ -133,7 +133,7 @@ void on_wifi_event( uint8_t pending_events )
 
       if( tracker_ctx.internal_log_enable )
       {
-         tracker_store_wifi_in_internal_log( &wifi_scan_results );
+	 tracker_store_wifi_in_internal_log( &wifi_scan_results );
       }
    }
 
@@ -151,7 +151,7 @@ void on_wifi_event( uint8_t pending_events )
       HAL_DBG_TRACE_PRINTF( "Remaining duty cycle %d ms\n", duty_cycle_status_ms );
 
       /* Led start for user notification */
-      smtc_board_led_pulse( smtc_board_get_led_tx_mask( ), true, LED_PERIOD_MS );
+// PHIL      smtc_board_led_pulse( smtc_board_get_led_tx_mask( ), true, LED_PERIOD_MS );
    }
 
 
@@ -172,40 +172,40 @@ void on_wifi_event( uint8_t pending_events )
       uint32_t sequence_duration_sec = apps_modem_common_get_utc_time( ) - tracker_ctx.start_sequence_timestamp;
 
       if( ( tracker_ctx.wifi_nb_scan_sent.nb_scans_sent == 0 ) ||
-          ( tracker_app_is_tracker_in_static_mode( ) == true ) )
+	  ( tracker_app_is_tracker_in_static_mode( ) == true ) )
       {
-         HAL_DBG_TRACE_MSG( "No scan results good enough or keep alive frame, sensors values\n" );
-         /* Send sensors values */
+	 HAL_DBG_TRACE_MSG( "No scan results good enough or keep alive frame, sensors values\n" );
+	 /* Send sensors values */
 // PHIL            tracker_app_read_and_send_sensors( );
       }
 
       if( tracker_app_is_tracker_in_static_mode( ) == true )
       {
-         if( sequence_duration_sec > tracker_ctx.static_scan_interval )
-         {
-            sequence_duration_sec = tracker_ctx.static_scan_interval;
-         }
+	 if( sequence_duration_sec > tracker_ctx.static_scan_interval )
+	 {
+	    sequence_duration_sec = tracker_ctx.static_scan_interval;
+	 }
 
-         /* Stop Hall Effect sensors while the tracker is static */
+	 /* Stop Hall Effect sensors while the tracker is static */
 // PHIL            smtc_board_hall_effect_enable( false );
 
-         HAL_DBG_TRACE_MSG( "Switch static mode\n" );
+	 HAL_DBG_TRACE_MSG( "Switch static mode\n" );
 #if (ENABLE_GNSS > 0)
-         gnss_mw_scan_aggregate( true );
-         gnss_mw_scan_start( GNSS_MW_MODE_STATIC, tracker_ctx.static_scan_interval - sequence_duration_sec );
+	 gnss_mw_scan_aggregate( true );
+	 gnss_mw_scan_start( GNSS_MW_MODE_STATIC, tracker_ctx.static_scan_interval - sequence_duration_sec );
 #endif
       }
       else
       {
-         if( sequence_duration_sec > tracker_ctx.mobile_scan_interval )
-         {
-            sequence_duration_sec = tracker_ctx.mobile_scan_interval;
-         }
+	 if( sequence_duration_sec > tracker_ctx.mobile_scan_interval )
+	 {
+	    sequence_duration_sec = tracker_ctx.mobile_scan_interval;
+	 }
 
-         HAL_DBG_TRACE_MSG( "Continue in mobile mode\n" );
+	 HAL_DBG_TRACE_MSG( "Continue in mobile mode\n" );
 #if (ENABLE_GNSS > 0)
-         gnss_mw_scan_aggregate( false );
-         gnss_mw_scan_start( GNSS_MW_MODE_MOBILE, tracker_ctx.mobile_scan_interval - sequence_duration_sec );
+	 gnss_mw_scan_aggregate( false );
+	 gnss_mw_scan_start( GNSS_MW_MODE_MOBILE, tracker_ctx.mobile_scan_interval - sequence_duration_sec );
 #endif
       }
    }
