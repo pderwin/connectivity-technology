@@ -1,34 +1,6 @@
-/*============================================================================*
- *         Copyright © 2019-2021 Signetik, LLC -- All Rights Reserved         *
- *----------------------------------------------------------------------------*
- *                                                              Signetik, LLC *
- *                                                           www.signetik.com *
- *                                          SPDX-License-Identifier: Sigentik *
- *                                                                            *
- * Customer may modify, compile, assemble and convert this source code into   *
- * binary object or executable code for use on Signetk products purchased     *
- * from Signetik or its distributors.                                         *
- *                                                                            *
- * Customer may incorporate or embed an binary executable version of the      *
- * software into the Customer’s product(s), which incorporate a Signetik      *
- * product purchased from Signetik or its distributors. Customer may          *
- * manufacture, brand and distribute such Customer’s product(s) worldwide to  *
- * its End-Users.                                                             *
- *                                                                            *
- * This agreement must be formalized with Signetik before Customer enters     *
- * production and/or distributes products to Customer's End-Users             *
- *============================================================================*/
+#pragma once
 
-#ifndef	__VARS_H
-#define	__VARS_H
-
-#if	!defined(LINUX)
 #include <zephyr/kernel.h>
-#else
-#include <stdio.h>
-#include <unistd.h>
-#include <stdbool.h>
-#endif
 
 #define	MAX_KEY_LEN	24
 #define	MAX_VAL_LEN	128
@@ -66,30 +38,30 @@
 
 
 struct var_param_s {
-        uint8_t	key[MAX_KEY_LEN];
-        uint8_t	*value;
-        int	vlen;
+	uint8_t	key[MAX_KEY_LEN];
+	uint8_t	*value;
+	int	vlen;
 };
 
 struct var_str_s {
-        uint8_t	*data;
-        int	length;
-        int	size;
+	uint8_t	*data;
+	int	length;
+	int	size;
 };
 
 struct var_bin_s {
-        uint8_t	*data;
-        int	length;
-        int	minsize;
-        int	maxsize;
+	uint8_t	*data;
+	int	length;
+	int	minsize;
+	int	maxsize;
 };
 
 enum verr_codes	{
-        verr_success = 0,
-        verr_inv_key = -1,
-        verr_inv_value = -2,
-        verr_inv_type =	-3,
-        verr_inv_access	= -4,
+	verr_success = 0,
+	verr_inv_key = -1,
+	verr_inv_value = -2,
+	verr_inv_type =	-3,
+	verr_inv_access	= -4,
 };
 
 extern bool	var_echo;
@@ -183,5 +155,3 @@ enum verr_codes	vars_get(char *key,	char *value, int vlen, char	**value_str);
 
 int	vars_init(void);
 int	save_vars_config(void);
-
-#endif /* __VARS_H */

@@ -8,7 +8,6 @@ zephyr_library_include_directories( ./led )
 zephyr_library_include_directories( ./pe4259 )
 
 zephyr_library_sources(
-  bt_task.c
   ct_main.c
   debug_gpio.c
   gpio_mapper.c
