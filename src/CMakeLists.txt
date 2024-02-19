@@ -17,6 +17,8 @@ zephyr_library_sources(
 )
 
 add_subdirectory(accel)
+add_subdirectory(bluetooth)
+add_subdirectory(driveway_sensor)
 add_subdirectory(led)
 add_subdirectory(pe4259)
 add_subdirectory(pir)

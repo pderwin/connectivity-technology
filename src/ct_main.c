@@ -1,21 +1,37 @@
 #include <zephyr/kernel.h>
 #include <zephyr/init.h>
 #include "accel.h"
+#include "driveway_sensor.h"
 #include "led.h"
 #include "pir.h"
+#include "temperature_humidity.h"
 
 void bt_thread_start(void);
-void led_thread_start(void);
 void semtracker_thread_start (void);
-void temperature_humidity_init (void);
 void wifi_thread_start (void);
 
+/*-------------------------------------------------------------------------
+ *
+ * name:        ct_main
+ *
+ * description: connectivity-technology entry point via SYS_INIT.  This
+ *              implies it is running on the 'main' thread.  Kick off any
+ *              other threads that we need.
+ *
+ * input:
+ *
+ * output:
+ *
+ *-------------------------------------------------------------------------*/
 int ct_main(void)
 {
    printk("%s: initializing...\n", __func__);
 
+   driveway_sensor_init();
+
+   led_init();
+
    bt_thread_start();
-   led_thread_start();
 
    semtracker_thread_start();
 
