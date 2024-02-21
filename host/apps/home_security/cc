@@ -1,0 +1,5 @@
+strace \
+	-t \
+	--relative-timestamps=ms \
+	-o /tmp/mosquitto.strace -f --strings-in-hex=non-ascii \
+	./build/mosquitto_sub -v -t "#" | tee /tmp/mosquitto.log
