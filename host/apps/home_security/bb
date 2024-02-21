@@ -1,0 +1,6 @@
+# STRACE='strace -t --strings-in-hex=non-ascii --relative-timestamps=ms -f -o /tmp/home_security.strace'
+
+$STRACE	./build/home_security
+
+date
+countdown 30

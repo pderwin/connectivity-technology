@@ -1,0 +1,20 @@
+#!/bin/sh
+
+BUILD=./build
+
+# rm -rf $BUILD
+
+if [ ! -d $BUILD ] ; then
+    cmake -B $BUILD .
+fi
+
+cmake --build $BUILD
+rc=$?
+
+if [ $rc -ne 0 ] ; then
+    exit 1;
+fi
+
+date
+set-title home_security: done
+countdown 30
