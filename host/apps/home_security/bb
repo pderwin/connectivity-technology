@@ -1,6 +1,18 @@
+#!/bin/zsh
+
 # STRACE='strace -t --strings-in-hex=non-ascii --relative-timestamps=ms -f -o /tmp/home_security.strace'
+# TIMEOUT='--timeout=180'
+# DOWNLOAD='--camera-download=1708958150'
 
-$STRACE	./build/home_security
+set -x
 
+set-title home_security active...
+
+eval $STRACE ./build/home_security $TIMEOUT $DOWNLOAD \
+     --camera-download-path=/home/erwin/video \
+     --camera-download-range=600 \
+     --camera-ip=192.168.1.171 \
+    | tee /tmp/home_security.log
+
+set-title home_security idle
 date
-countdown 30

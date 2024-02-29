@@ -4,17 +4,40 @@
 #include <sys/time.h>
 #include <time.h>
 #include "base64.h"
+#include "camera.h"
 #include "event_internal.h"
 
 static event_t event;
 static void print_cur_time (void);
 
+/*-------------------------------------------------------------------------
+ *
+ * name:        event_init
+ *
+ * description:
+ *
+ * input:
+ *
+ * output:
+ *
+ *-------------------------------------------------------------------------*/
 void event_init (void)
 {
    bzero(&event,sizeof(event));;
 }
 
 
+/*-------------------------------------------------------------------------
+ *
+ * name:        event_key_value
+ *
+ * description:
+ *
+ * input:
+ *
+ * output:
+ *
+ *-------------------------------------------------------------------------*/
 void event_key_value (char *key, char *value)
 {
    uint8_t
@@ -47,6 +70,18 @@ void event_key_value (char *key, char *value)
 
 }
 
+/*-------------------------------------------------------------------------
+ *
+ * name:        event_process
+ *
+ * description: Called at the end of the YAML parsing to process the content
+ *              of the event.
+ *
+ * input:       none
+ *
+ * output:      none
+ *
+ *-------------------------------------------------------------------------*/
 void event_process (void)
 {
 
@@ -60,12 +95,21 @@ void event_process (void)
    print_cur_time();
 
    switch (event.f_port) {
+
        case 60:
-	  printf("PIR: %s", event.payload);
+	  printf("PIR: %s ", event.payload);
 	  break;
+
        case 70:
 	  printf("DRIVEWAY_SENSOR: %s", event.payload);
+
+	  /*
+	   * Send request to the camera interaction thread to have it pull the
+	   * correct footage from the camera to cover our time period
+	   */
+	  camera_download(time(NULL));
 	  break;
+
        default:
 	  printf("Unknown fport: %d ", event.f_port);
 	  break;

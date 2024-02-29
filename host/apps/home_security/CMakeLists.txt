@@ -33,9 +33,15 @@ link_directories(    ../../lib/paho.mqtt.c/build/src )
 
 ADD_EXECUTABLE( home_security
   base64.c
-  home_security.c
-  message.c
+  camera.c
+  curl.c
   event.c
+  file_entry.c
+  home_security.c
+  join.c
+  mqtt.c
+  up.c
+  yaml.c
   )
 
-target_link_libraries (home_security paho-mqtt3c yaml )
+target_link_libraries (home_security paho-mqtt3c yaml curl)

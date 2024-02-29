@@ -8,7 +8,8 @@ if [ ! -d $BUILD ] ; then
     cmake -B $BUILD .
 fi
 
-cmake --build $BUILD
+clear
+cmake --build $BUILD --parallel=2
 rc=$?
 
 if [ $rc -ne 0 ] ; then
@@ -16,5 +17,5 @@ if [ $rc -ne 0 ] ; then
 fi
 
 date
-set-title home_security: done
+set-title home_security: build complete
 countdown 30
