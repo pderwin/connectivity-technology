@@ -6,9 +6,9 @@
 #include "base64.h"
 #include "camera.h"
 #include "event_internal.h"
+#include "misc.h"
 
 static event_t event;
-static void print_cur_time (void);
 
 /*-------------------------------------------------------------------------
  *
@@ -110,27 +110,16 @@ void event_process (void)
 	  camera_download(time(NULL));
 	  break;
 
+	  /*
+	   * ignore port 199 events for now.
+	   */
+       case 199:
+	  break;
+
        default:
 	  printf("Unknown fport: %d ", event.f_port);
 	  break;
    }
 
    printf("\n");
-}
-
-static void print_cur_time (void)
-{
-   char
-      time_buf[80];
-   struct timeval
-      ts;
-   struct tm
-      timeinfo;
-
-   gettimeofday(&ts, NULL);
-   localtime_r(&ts.tv_sec, &timeinfo);
-
-   strftime(time_buf, sizeof(time_buf), "%m/%d/%Y %H:%M:%S", &timeinfo);
-
-   printf("%s: ", time_buf);
 }

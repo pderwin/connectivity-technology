@@ -4,7 +4,7 @@
 # TIMEOUT='--timeout=180'
 # DOWNLOAD='--camera-download=1708958150'
 
-set -x
+# set -x
 
 set-title home_security active...
 

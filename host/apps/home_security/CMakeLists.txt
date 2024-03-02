@@ -39,6 +39,7 @@ ADD_EXECUTABLE( home_security
   file_entry.c
   home_security.c
   join.c
+  misc.c
   mqtt.c
   up.c
   yaml.c

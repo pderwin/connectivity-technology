@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "join.h"
-
-// 'application/3bdb1cb2-ed86-4b67-a0cd-e1113189aa3c/device/0000000000000b03/event/join'
+#include "misc.h"
 
 static const char *delim = "/";
 
@@ -25,6 +24,8 @@ void join_parse (char *topic_name)
     * This is the ID of the device.
     */
    cp  = strtok(NULL, delim);
+
+   print_cur_time();
 
    printf("Device: '%s' Joined network\n", cp);
 }
