@@ -36,8 +36,6 @@ static void driveway_sensor_thread (void *p1, void *p2, void *p3)
        */
       if (ds != last_ds) {
 
-	 printk("DS: %d (%d) \n", ds, last_ds);
-
 	 last_ds = ds;
 
 	 if (ds == 0) {
