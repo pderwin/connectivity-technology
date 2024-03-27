@@ -61,7 +61,7 @@ static void pir_thread (void *p1, void *p2, void *p3)
 		*/
 	       semtracker_thread_wakeup ();
 
-	       printk("%s %d rc: %d \n", __func__,__LINE__, rc);
+	       printk("%s: Alarm sent.  rc: %d \n", __func__, rc);
 	    }
 	 }
       }
