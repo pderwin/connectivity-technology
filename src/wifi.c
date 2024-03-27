@@ -4,13 +4,13 @@
 #include "accel.h"
 #include "apps_modem_common.h"
 #include "apps_utilities.h"
-#include "mw_assert.h"
 #include "pe4259.h"
 // #include "smtc_board.h"
 #include "smtc_hal_dbg_trace.h"
 #include "smtc_modem_api.h"
-#include "tracker_utility.h"
-#include "wifi_middleware.h"
+#include "smtc_modem_geolocation_api.h"
+// #include "tracker_utility.h"
+// #include "wifi_middleware.h"
 #include "wifi.h"
 
 #define WIFI_PRIORITY   (4)
@@ -18,49 +18,54 @@
 
 #define LED_PERIOD_MS 100
 
+#define STACK_ID (0)
+
 /*!
  * @brief Stack identifier
  */
-static uint8_t stack_id = 1;
+// static uint8_t stack_id = 1;
 
-static void create_wifi_location_packet(uint8_t *packet, uint32_t packet_size, wifi_mw_event_data_scan_done_t *wifi_scan_results);
+//static void create_wifi_location_packet(uint8_t *packet,
+//					uint32_t packet_size,
+//					smtc_modem_wifi_event_data_scan_done_t *wifi_scan_results);
 
 /*!
  * @brief Modem radio
  */
-extern ralf_t
-    *tracker_modem_radio;
-extern tracker_ctx_t
-    tracker_ctx;
+//extern ralf_t
+//    *tracker_modem_radio;
+// extern tracker_ctx_t
+//     tracker_ctx;
 
+#if 0
 static uint32_t tracker_app_is_tracker_in_static_mode (void)
 {
    return false;
 }
+#endif
 
 static uint32_t
     wifi_ready;
 
 void wifi_init (void)
 {
-   mw_version_t
-      mw_version;
-   smtc_modem_return_code_t
-      rc;
+//   smtc_modem_return_code_t
+//      rc;
+
    /*
     * If link is not up, then bail.
     */
-   rc =  smtc_modem_lorawan_request_link_check(0);
-   if (rc) {
-      return;
-   }
+//   rc =  smtc_modem_lorawan_request_link_check(0);
+//   if (rc) {
+//      return;
+//   }
 
-   wifi_mw_get_version( &mw_version );
-   printk( "Initializing Wi-Fi middleware v%d.%d.%d\n", mw_version.major, mw_version.minor,
-	   mw_version.patch );
+//   wifi_mw_get_version( &mw_version );
+//   printk( "Initializing Wi-Fi middleware v%d.%d.%d\n", mw_version.major, mw_version.minor,
+//	   mw_version.patch );
 
    /* Initialize Wi-Fi middleware */
-   wifi_mw_init( tracker_modem_radio, stack_id );
+//   wifi_mw_init( tracker_modem_radio, stack_id );
 
    wifi_ready = 1;
 }
@@ -77,17 +82,23 @@ void wifi_scan_start (void)
     * Perform the wifi scan.
     */
    printk( "%s: Start Wi-Fi scan\n", __func__ );
-   wifi_mw_scan_start( 0 );
+
+   /*
+    * Start a scan with zero delay.
+    */
+   smtc_modem_wifi_scan( STACK_ID, 0 );
 }
 
-void on_wifi_event( uint8_t pending_events )
+void on_wifi_scan_terminated( smtc_modem_wifi_event_data_terminated_t event )
 {
-   char
-      wifi_data[64];
-   smtc_modem_return_code_t
-      rc;
+//   char
+//      wifi_data[64];
+//   smtc_modem_return_code_t
+//      rc;
 
-   printk("%s: pending: %x \n", __func__, pending_events );
+   printk("%s: \n", __func__);
+
+#if 0
 
    /* Parse events */
 
@@ -169,9 +180,9 @@ void on_wifi_event( uint8_t pending_events )
    if( wifi_mw_has_event( pending_events, WIFI_MW_EVENT_TERMINATED ) ||
        wifi_mw_has_event( pending_events, WIFI_MW_EVENT_ERROR_UNKNOWN ) )
    {
-      uint32_t sequence_duration_sec = apps_modem_common_get_utc_time( ) - tracker_ctx.start_sequence_timestamp;
+      uint32_t sequence_duration_sec = apps_modem_common_get_utc_time( STACK_ID ) - tracker_ctx.start_sequence_timestamp;
 
-      if( ( tracker_ctx.wifi_nb_scan_sent.nb_scans_sent == 0 ) ||
+      if( ( event.nb_scans_sent == 0 ) ||
 	  ( tracker_app_is_tracker_in_static_mode( ) == true ) )
       {
 	 HAL_DBG_TRACE_MSG( "No scan results good enough or keep alive frame, sensors values\n" );
@@ -210,10 +221,16 @@ void on_wifi_event( uint8_t pending_events )
       }
    }
 
-   wifi_mw_clear_pending_events( );
+// how to translate?   wifi_mw_clear_pending_events( );
+
+#endif
+
 }
 
-static void create_wifi_location_packet(uint8_t *packet, uint32_t packet_size, wifi_mw_event_data_scan_done_t *wifi_scan_results)
+#if 0
+static void create_wifi_location_packet(uint8_t *packet,
+					uint32_t packet_size,
+					smtc_modem_wifi_event_data_scan_done_t *wifi_scan_results)
 {
    uint32_t
       count = 0,
@@ -267,3 +284,4 @@ static void create_wifi_location_packet(uint8_t *packet, uint32_t packet_size, w
       count += 7;
    }
 }
+#endif

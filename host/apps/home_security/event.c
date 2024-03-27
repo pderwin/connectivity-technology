@@ -92,16 +92,16 @@ void event_process (void)
       return;
    }
 
-   print_cur_time();
-
    switch (event.f_port) {
 
        case 60:
-	  printf("PIR: %s ", event.payload);
+	  print_cur_time();
+	  printf("PIR: %s \n", event.payload);
 	  break;
 
        case 70:
-	  printf("DRIVEWAY_SENSOR: %s", event.payload);
+	  print_cur_time();
+	  printf("DRIVEWAY_SENSOR: %s \n", event.payload);
 
 	  /*
 	   * Send request to the camera interaction thread to have it pull the
@@ -111,15 +111,14 @@ void event_process (void)
 	  break;
 
 	  /*
-	   * ignore port 199 events for now.
+	   * ignore certain ports for now
 	   */
+       case 111:
        case 199:
 	  break;
 
        default:
-	  printf("Unknown fport: %d ", event.f_port);
+	  printf("Unknown fport: %d \n", event.f_port);
 	  break;
    }
-
-   printf("\n");
 }

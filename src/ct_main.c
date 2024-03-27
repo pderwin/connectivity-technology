@@ -4,10 +4,10 @@
 #include "driveway_sensor.h"
 #include "led.h"
 #include "pir.h"
+#include "semtracker.h"
 #include "temperature_humidity.h"
 
-void bt_thread_start(void);
-void semtracker_thread_start (void);
+void bluetooth_init(void);
 void wifi_thread_start (void);
 
 /*-------------------------------------------------------------------------
@@ -25,15 +25,13 @@ void wifi_thread_start (void);
  *-------------------------------------------------------------------------*/
 int ct_main(void)
 {
-   printk("%s: initializing...\n", __func__);
-
    driveway_sensor_init();
 
    led_init();
 
-   bt_thread_start();
+//   bluetooth_init();
 
-   semtracker_thread_start();
+   semtracker_init();
 
    accel_init();
 
@@ -48,8 +46,6 @@ int ct_main(void)
     * Make the green LED blink until further notice.
     */
    led_command(LED_GREEN, LED_CMD_BLINK, 1000);
-
-   printk("%s: initialization complete\n", __func__);
 
    return 0;
 }
