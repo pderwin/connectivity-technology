@@ -2,6 +2,8 @@
 # a dummy output that's not actually produced, in order
 # to force version.cmake to always be re-run before the build
 
+set_property(GLOBAL PROPERTY RULE_MESSAGES OFF)
+
 zephyr_library()
 
 zephyr_library_include_directories( ./led )
@@ -12,7 +14,7 @@ zephyr_library_sources(
   debug_gpio.c
   gpio_mapper.c
   stubs.c
-  wifi.c
+#  wifi.c
 )
 
 add_subdirectory(accel)
@@ -22,4 +24,5 @@ add_subdirectory(led)
 add_subdirectory(pe4259)
 add_subdirectory(pir)
 add_subdirectory(semtracker)
+add_subdirectory(settings)
 add_subdirectory(temperature_humidity)
