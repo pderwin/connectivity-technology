@@ -54,7 +54,7 @@ static void pir_thread (void *p1, void *p2, void *p3)
 	     * Send message to port 60 when the line drops to low.
 	     */
 	    if (pir == 1) {
-	       rc = smtc_modem_request_uplink(0, 60, 1, "pir_0: alarm", 12);
+	       rc = smtc_modem_request_uplink(0, 60, 1, "pir: alarm", 10);
 
 	       /*
 		* The radio may be in sleep mode, so wake it.
