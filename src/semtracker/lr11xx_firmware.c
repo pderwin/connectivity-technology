@@ -1,7 +1,8 @@
 #include <zephyr/kernel.h>
 #include "lr1110_transceiver_0308.h"
 #include "lr11xx_firmware_update.h"
-#include "lr11xx_hal.h"
+#include "lr11xx_drv.h"    // zephyr driver interfaces
+#include "lr11xx_hal.h"    // SMTC specified HAL layer
 #include "lr11xx_system.h"
 
 static lr11xx_fw_update_status_t firmware_update (const void *radio);
@@ -46,7 +47,7 @@ lr11xx_hal_status_t lr11xx_firmware_check ( const void *context )
      * check if the LR1110 is in transceiver mode or Modem-E mode, busy pin in low for transceiver mode, high for
      * Modem-E
      */
-    lr11xx_busy_pin_state = lr11xx_hal_read_busy_pin( context );
+    lr11xx_busy_pin_state = lr11xx_drv_read_busy_pin( context );
 
     if ( lr11xx_busy_pin_state == 0 ) {
 
