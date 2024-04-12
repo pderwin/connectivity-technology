@@ -64,7 +64,7 @@ static void accel_callback (const struct device *device, const struct sensor_tri
    /*
     * Turn the blue LED on for a half second.
     */
-   led_command(LED_GREEN, LED_CMD_BLINK_ONCE, 500);
+   led_blink_once(LED_GREEN, 500);
 
    rc = smtc_modem_request_uplink(0, 111, 1, "Hello World", 11);
 
