@@ -2,6 +2,7 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include "led.h"
+#include "priority.h"
 #include "smtc_modem_api.h"
 
 #define DRIVEWAY_SENSOR_PRIORITY   3
@@ -32,21 +33,13 @@ static void driveway_sensor_thread (void *p1, void *p2, void *p3)
       ds = gpio_pin_get_dt(&driveway_sensor);
 
       /*
-       * pir will be zero when the PIR is active.
+       * value will be zero when the sensor is active.
        */
       if (ds != last_ds) {
 
 	 last_ds = ds;
 
-	 if (ds == 0) {
-	    /*
-	     * Always keep the LED up to date
-	     */
-	    led_blink(LED_RED, 100);
-	 }
-	 else {
-	    led_off(LED_RED);
-	 }
+	 led_set(LED_RED, (ds == 0) ? 1 : 0);
 
 	 /*
 	  * If we have not sent a message to the host for a while, send that now.
@@ -90,7 +83,7 @@ void driveway_sensor_init (void)
       NULL,
       NULL,
       NULL,
-      DRIVEWAY_SENSOR_PRIORITY,
+      PRIORITY_DRIVEWAY_SENSOR,
       0,
       K_NO_WAIT);
 }

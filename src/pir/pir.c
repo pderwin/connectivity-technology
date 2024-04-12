@@ -2,9 +2,9 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include "led.h"
+#include "priority.h"
 #include "smtc_modem_api.h"
 
-#define PIR_PRIORITY 3
 #define PIR_STACK_SIZE (1024)
 
 extern void semtracker_thread_wakeup (void);
@@ -30,7 +30,7 @@ static void pir_thread (void *p1, void *p2, void *p3)
       pir = gpio_pin_get_dt(&pir_0);
 
       /*
-       * pir will be zero when the PIR is active.
+       * pir will be one when the PIR is active.
        */
       if (pir != last_pir) {
 
@@ -39,7 +39,7 @@ static void pir_thread (void *p1, void *p2, void *p3)
 	 /*
 	  * Always keep the LED up to date
 	  */
-	 led_command(LED_RED, LED_CMD_SET, !pir);
+	 led_set(LED_RED, pir);
 
 	 /*
 	  * If we have not sent a message to the host for a while, send that now.
@@ -66,7 +66,7 @@ static void pir_thread (void *p1, void *p2, void *p3)
 	 }
       }
 
-      k_sleep(K_MSEC(100));
+      k_sleep(K_MSEC(250));
    }
 }
 
@@ -84,7 +84,7 @@ void pir_init (void)
       NULL,
       NULL,
       NULL,
-      PIR_PRIORITY,
+      PRIORITY_PIR,
       0,
       K_NO_WAIT);
 }
