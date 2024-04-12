@@ -2,6 +2,7 @@
  * Zephyr includes
  */
 #include <zephyr/kernel.h>
+#include <zephyr/drivers/trace.h>
 
 /*
  * Semtech includes.
@@ -21,8 +22,10 @@
  * local includes.
  */
 #include "config.h"
+#include "led.h"
 #include "lr11xx_firmware.h"
-#include "semtracker.h"
+#include "priority.h"
+#include "semtracker_internal.h"
 
 /*
  * Our configuation structure
@@ -32,9 +35,47 @@ static config_t config;
 static uint8_t
     stack_id = 0;
 
+/*
+ * Define a message Queue
+ */
+K_MSGQ_DEFINE(semtracker_msgq, sizeof(semtracker_msg_t), 10, 4);
+
+
 static void configure_lorawan_parms( void );
 static void display_lbm_version    ( void );
 static void init_config            ( void);
+static void semtracker_msg_handle  (semtracker_msg_t *msg);
+
+/*-------------------------------------------------------------------------
+ *
+ * name:        on_joined
+ *
+ * description:
+ *
+ * input:
+ *
+ * output:
+ *
+ *-------------------------------------------------------------------------*/
+static void on_joined( void )
+{
+    /* Stop network research notification */
+   led_on(LED_GREEN);
+
+#if phil
+   ASSERT_SMTC_MODEM_RC( smtc_modem_set_class( stack_id, LORAWAN_CLASS ) );
+   modem_class_to_string( LORAWAN_CLASS );
+
+   /* Set the ADR according to the region */
+   tracker_app_set_adr( );
+
+   /* Trig Mac command */
+   ASSERT_SMTC_MODEM_RC( smtc_modem_trig_lorawan_mac_request(
+			    stack_id, SMTC_MODEM_LORAWAN_MAC_REQ_LINK_CHECK | SMTC_MODEM_LORAWAN_MAC_REQ_DEVICE_TIME ) );
+
+   smtc_modem_alarm_start_timer( APP_ONE_DAY_IN_SEC );
+#endif
+}
 
 
 /*-------------------------------------------------------------------------
@@ -93,6 +134,11 @@ static void app_start ( void )
 
    if ( config.airplane_mode == false ) {
 
+      /*
+       * Blink red LED periodically.  One for a half-second every 5 seconds.
+       */
+      led_blink(LED_GREEN, 500, 5000);
+
       /* Start the Join process */
       smtc_modem_join_network( stack_id );
       HAL_DBG_TRACE_INFO( "###### ===== JOINING ==== ######\n\n" );
@@ -138,9 +184,12 @@ static void app_start ( void )
 void semtracker_thread( void *p1, void *p2, void *p3)
 {
    uint32_t
+      rc,
       sleep_msecs;
    const void
       *radio_context;
+   semtracker_msg_t
+      msg;
 
    printk("%s %d (from %p) \n", __func__,__LINE__, __builtin_return_address(0) );
 
@@ -180,7 +229,7 @@ void semtracker_thread( void *p1, void *p2, void *p3)
     {
        static apps_modem_event_callback_t apps_modem_event_callback = {
 //	  .down_data                 = on_modem_down_data,
-//	  .joined                    = on_modem_network_joined,
+	  .joined                    = on_joined,
 	  .reset                     = on_reset,
 //	  .gnss_scan_done            = on_gnss_scan_done,
 //	  .gnss_terminated           = on_gnss_scan_terminated,
@@ -213,7 +262,21 @@ void semtracker_thread( void *p1, void *p2, void *p3)
 	 */
 	sleep_msecs = smtc_modem_run_engine( );
 
-	k_msleep(sleep_msecs);
+	TRACE1(TAG_SEMTRACKER_LOOP, sleep_msecs);
+
+	/*
+	 * Wait for the specified time, or for a command to come in.  The engine did return
+	 * a value of 0, which implies wait forevcer to k_msgq_get(), so protect from that.
+	 */
+	if (sleep_msecs) {
+	   HERE();
+	   rc = k_msgq_get(&semtracker_msgq, &msg, K_MSEC( sleep_msecs ));
+	   TRACE_MISC(rc);
+	   if (rc == 0) {
+	      semtracker_msg_handle(&msg);
+	   }
+	}
+
 #if 0
 
 
@@ -266,6 +329,35 @@ void semtracker_thread( void *p1, void *p2, void *p3)
     } // while(1)
 }
 
+
+/*-------------------------------------------------------------------------
+ *
+ * name:        semtracker_msg_handle
+ *
+ * description:
+ *
+ * input:
+ *
+ * output:
+ *
+ *-------------------------------------------------------------------------*/
+static void semtracker_msg_handle (semtracker_msg_t *msg)
+{
+   switch(msg->cmd) {
+      /*
+       * This command says we should perform a GNSS request.
+       */
+
+      /*
+       * This command is just to wake the thread.  NOP other than that.
+       */
+       case SEMTRACKER_CMD_WAKEUP:
+	  break;
+
+       default:
+	  printf("%s: Unhandled command: %d \n", __func__, msg->cmd);
+   }
+}
 
 /*-------------------------------------------------------------------------
  *
@@ -459,25 +551,6 @@ static void configure_lorawan_parms( void )
 }
 
 #if 0
-/*
- * -----------------------------------------------------------------------------
- * --- PRIVATE FUNCTIONS DEFINITION --------------------------------------------
- */
-
-/*
- * -----------------------------------------------------------------------------
- * --- TRACKER GNSS FUNCTION TYPES ---------------------------------------------
- */
-
-/*
- * -----------------------------------------------------------------------------
- * --- TRACKER LORAWAN FUNCTION TYPES ------------------------------------------
- */
-
-/*
- * -------------------------------------------------------------------------
- * --- TRACKER APP FUNCTION TYPES ------------------------------------------
- */
 
 static void tracker_app_build_and_send_tracker_settings( const uint8_t* buffer, uint8_t len )
 {
@@ -757,24 +830,6 @@ static void on_alarm_event( void )
 	stack_id, SMTC_MODEM_LORAWAN_MAC_REQ_LINK_CHECK | SMTC_MODEM_LORAWAN_MAC_REQ_DEVICE_TIME ) );
 }
 
-static void on_modem_network_joined( void )
-{
-    /* Stop network research notification */
-    smtc_board_stop_periodic_led_pulse( );
-
-    ASSERT_SMTC_MODEM_RC( smtc_modem_set_class( stack_id, LORAWAN_CLASS ) );
-    modem_class_to_string( LORAWAN_CLASS );
-
-    /* Set the ADR according to the region */
-    tracker_app_set_adr( );
-
-    /* Trig Mac command */
-    ASSERT_SMTC_MODEM_RC( smtc_modem_trig_lorawan_mac_request(
-	stack_id, SMTC_MODEM_LORAWAN_MAC_REQ_LINK_CHECK | SMTC_MODEM_LORAWAN_MAC_REQ_DEVICE_TIME ) );
-
-    smtc_modem_alarm_start_timer( APP_ONE_DAY_IN_SEC );
-}
-
 static void on_modem_down_data( const uint8_t* payload, uint8_t size, smtc_modem_dl_metadata_t metadata,
 				uint8_t remaining_data_nb )
 {
@@ -940,7 +995,6 @@ static void on_wifi_scan_terminated( smtc_modem_wifi_event_data_terminated_t dat
 }
 #endif
 
-#define SEMTRACKER_PRIORITY  (4)
 #define SEMTRACKER_STACKSIZE (2048)
 
 K_THREAD_STACK_DEFINE(semtracker_stack_area, SEMTRACKER_STACKSIZE);
@@ -965,10 +1019,32 @@ void semtracker_init(void)
 			 K_THREAD_STACK_SIZEOF(semtracker_stack_area),
 			 semtracker_thread,
 			 NULL, NULL,	NULL,
-			 SEMTRACKER_PRIORITY, 0, K_NO_WAIT);
+			 PRIORITY_SEMTRACKER, 0, K_NO_WAIT);
 
    k_thread_name_set(tid, "semtracker");
 
+}
+
+/*-------------------------------------------------------------------------
+ *
+ * name:        semtracker_cmd
+ *
+ * description: Send a command to the semtracker thread via its message Q
+ *
+ * input:
+ *
+ * output:
+ *
+ *-------------------------------------------------------------------------*/
+void semtracker_cmd (semtracker_cmd_e cmd, uint32_t arg0)
+{
+   semtracker_msg_t
+      msg;
+
+   msg.cmd  = cmd;
+   msg.arg0 = arg0;
+
+   k_msgq_put(&semtracker_msgq, &msg, K_FOREVER);
 }
 
 /*-------------------------------------------------------------------------
@@ -984,5 +1060,5 @@ void semtracker_init(void)
  *-------------------------------------------------------------------------*/
 void semtracker_thread_wakeup (void)
 {
-   k_wakeup(&semtracker_kthread);
+   semtracker_cmd(SEMTRACKER_CMD_WAKEUP, 0);
 }
