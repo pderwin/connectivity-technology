@@ -1,6 +1,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/init.h>
 #include "accel.h"
+#include "buttons.h"
 #include "driveway_sensor.h"
 #include "led.h"
 #include "pir.h"
@@ -29,6 +30,8 @@ int ct_main(void)
 
    led_init();
 
+   buttons_init();
+
 //   bluetooth_init();
 
    semtracker_init();
@@ -45,7 +48,7 @@ int ct_main(void)
    /*
     * Make the green LED blink until further notice.
     */
-   led_command(LED_GREEN, LED_CMD_BLINK, 1000);
+   led_on(LED_GREEN);
 
    return 0;
 }
