@@ -6,8 +6,9 @@
 typedef struct {
    led_cmd_e cmd;
    led_id_e  id;
-   uint32_t  arg;
-} msg_t;
+   uint32_t  arg0;
+   uint32_t  arg1;
+} led_msg_t;
 
 /*---------------------- */
 
@@ -29,7 +30,8 @@ typedef struct {
    led_state_e
        state;
    uint32_t
-       blink_rate;  // timeout for each blink of the LED.  Set from msg->arg.
+       blink_off_time,  // timeout for each blink of the LED.  Set from msg->arg.
+       blink_on_time;
 
    uint32_t
        timeout;  // value computed that will be the uptime when the next transition occurs.

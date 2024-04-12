@@ -2,14 +2,14 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/devicetree.h>
 #include "led_internal.h"
+#include "priority.h"
 
 #define NUMBER_LEDS    (3)
 
-#define LED_PRIORITY   (4)
 #define LED_STACK_SIZE (1024)
 
-static void handle_msg (msg_t *msg);
-static void led_set (led_t *led, uint32_t val, uint32_t duration);
+static void handle_msg (led_msg_t *msg);
+static void __led_set  (led_t *led, uint32_t val, uint32_t duration);
 
 static led_t leds[] = {
    {
@@ -27,14 +27,14 @@ static void gpio_configure (void);
 /*
  * Define a message type.
  */
-K_MSGQ_DEFINE(led_msgq, sizeof(msg_t), 10, 4);
+K_MSGQ_DEFINE(led_msgq, sizeof(led_msg_t), 10, 4);
 
-static void handle_msg (msg_t *msg)
+static void handle_msg (led_msg_t *msg)
 {
    uint32_t
       i;
    led_t
-   *led;
+      *led;
 
    /*
     * Find the correct LED structure based on the id.
@@ -57,27 +57,28 @@ static void handle_msg (msg_t *msg)
 
    case LED_CMD_BLINK:
 
-      led->state      = LED_STATE_BLINK;
-      led->blink_rate = msg->arg;
+      led->state          = LED_STATE_BLINK;
+      led->blink_on_time  = msg->arg0;
+      led->blink_off_time = msg->arg1;
 
       /*
        * Turn the LED on, and set timeout for turn-off
        */
-      led_set(led, 1, led->blink_rate);
+      __led_set(led, 1, led->blink_on_time);
 
       break;
 
    case LED_CMD_BLINK_ONCE:
 
       led->state = LED_STATE_BLINK_ONCE;
-      led_set(led, 1, msg->arg);
+      __led_set(led, 1, msg->arg0);
 
       break;
 
    case LED_CMD_SET:
 
       led->state = LED_STATE_IDLE;
-      led_set(led, msg->arg, 0);
+      __led_set(led, msg->arg0, 0);
 
       break;
 
@@ -87,14 +88,26 @@ static void handle_msg (msg_t *msg)
    }
 }
 
+/*-------------------------------------------------------------------------
+ *
+ * name:        handle_timeout
+ *
+ * description:
+ *
+ * input:
+ *
+ * output:
+ *
+ *-------------------------------------------------------------------------*/
 static void handle_timeout (void)
 {
    uint32_t
       i,
+      new_value,
+      timeout,
       uptime;
    led_t
    *led;
-
 
    uptime = k_uptime_get();
 
@@ -107,7 +120,19 @@ static void handle_timeout (void)
       case LED_STATE_BLINK:
 
 	 if (uptime >= led->timeout) {
-	    led_set(led, led->value ^ 1, led->blink_rate);
+	    /*
+	     * If LED is on, then send in the off timeout value.
+	     */
+	    if (led->value) {
+	       timeout = led->blink_off_time;
+	       new_value = 0;
+	    }
+	    else {
+	       timeout = led->blink_on_time;
+	       new_value = 1;
+	    }
+
+	    __led_set(led, new_value, timeout);
 	 }
 	 break;
 
@@ -115,7 +140,7 @@ static void handle_timeout (void)
 
 	 if (uptime >= led->timeout) {
 	    led->state = LED_STATE_IDLE;
-	    led_set(led, 0, 0);
+	    __led_set(led, 0, 0);
 	 }
 	 break;
 
@@ -128,22 +153,22 @@ static void handle_timeout (void)
 /*
  * Send a message to the LED thread.
  */
-void led_command (led_id_e id, led_cmd_e cmd, uint32_t arg)
+void led_command (led_id_e id, led_cmd_e cmd, uint32_t arg0, uint32_t arg1)
 {
-   msg_t
+   led_msg_t
       msg;
 
-
-   msg.id = id;
-   msg.cmd = cmd;
-   msg.arg = arg;
+   msg.id   = id;
+   msg.cmd  = cmd;
+   msg.arg0 = arg0;
+   msg.arg1 = arg1;
 
    k_msgq_put(&led_msgq, &msg, K_FOREVER);
 }
 
 /*-------------------------------------------------------------------------
  *
- * name:        led_set
+ * name:        __led_set
  *
  * description: Change the LED state and save value in the led->value variable.
  *
@@ -152,7 +177,7 @@ void led_command (led_id_e id, led_cmd_e cmd, uint32_t arg)
  * output:
  *
  *-------------------------------------------------------------------------*/
-static void led_set (led_t *led, uint32_t value, uint32_t duration)
+static void __led_set (led_t *led, uint32_t value, uint32_t duration)
 {
    /*
     * Set current state.
@@ -160,7 +185,7 @@ static void led_set (led_t *led, uint32_t value, uint32_t duration)
    gpio_pin_configure_dt(&led->gpio, GPIO_OUTPUT_ACTIVE);
 
    led->value     = value;
-   gpio_pin_set_dt(&led->gpio, value);
+   gpio_pin_set_dt(&led->gpio, value ^ 1);
 
    /*
     * Set timeout for state change.
@@ -183,7 +208,7 @@ static void led_thread (void *p1, void *p2, void *p3)
 {
    uint32_t
       rc;
-   msg_t
+   led_msg_t
       msg;
 
    (void) p1;
@@ -227,6 +252,7 @@ static void gpio_configure (void)
 
    for (i=0; i< ARRAY_SIZE(leds); i++, led++) {
       gpio_pin_configure_dt(&led->gpio, GPIO_OUTPUT_ACTIVE);
+      __led_set(led, 0, 0);
    }
 }
 
@@ -252,7 +278,7 @@ void led_init (void)
 			 K_THREAD_STACK_SIZEOF(led_stack),
 			 led_thread,
 			 NULL, NULL,    NULL,
-			 LED_PRIORITY, 0, K_NO_WAIT);
+			 PRIORITY_LED, 0, K_NO_WAIT);
 
    k_thread_name_set(tid, "led");
 }
