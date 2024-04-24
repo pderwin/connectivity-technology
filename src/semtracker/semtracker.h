@@ -1,8 +1,9 @@
 #pragma once
 
 typedef enum {
-   SEMTRACKER_CMD_BUTTON,
+   SEMTRACKER_CMD_GNSS_SCAN,
    SEMTRACKER_CMD_WAKEUP,
+   SEMTRACKER_CMD_WIFI_SCAN,
 
 } semtracker_cmd_e;
 

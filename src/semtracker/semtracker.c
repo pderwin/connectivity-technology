@@ -22,6 +22,7 @@
  * local includes.
  */
 #include "config.h"
+#include "downlink.h"
 #include "led.h"
 #include "lr11xx_firmware.h"
 #include "priority.h"
@@ -40,11 +41,149 @@ static uint8_t
  */
 K_MSGQ_DEFINE(semtracker_msgq, sizeof(semtracker_msg_t), 10, 4);
 
-
 static void configure_lorawan_parms( void );
 static void display_lbm_version    ( void );
-static void init_config            ( void);
-static void semtracker_msg_handle  (semtracker_msg_t *msg);
+static void init_config            ( void );
+static void semtracker_msg_handle  ( semtracker_msg_t *msg );
+static void set_data_rate_profile  ( uint32_t region );
+
+
+/*-------------------------------------------------------------------------
+ *
+ * name:
+ *
+ * description:
+ *
+ * input:
+ *
+ * output:
+ *
+ *-------------------------------------------------------------------------*/
+static void on_down_data( const uint8_t* payload, uint8_t length, smtc_modem_dl_metadata_t metadata,
+			  uint8_t remaining_data_nb )
+{
+   printk("%s %d length: %d rem: %d \n", __func__,__LINE__, length, remaining_data_nb);
+
+   if ( length ) {
+      printk("Downlink fport: %d size: %d \n", metadata.fport, length );
+      printk("rssi: %d\n", metadata.rssi);
+
+      downlink_parse(metadata.fport, payload, length);
+    }
+}
+
+
+
+/*-------------------------------------------------------------------------
+ *
+ * name:        on_gnss_scan_done
+ *
+ * description:
+ *
+ * input:
+ *
+ * output:
+ *
+ *-------------------------------------------------------------------------*/
+static void on_gnss_scan_done( smtc_modem_gnss_event_data_scan_done_t data )
+{
+   printf("%s %d \n", __func__,__LINE__);
+#if 0
+    HAL_DBG_TRACE_INFO( "on_gnss_scan_done\n" );
+
+    /* Convert GPS timestamp to UTC timestamp */
+    for( int i = 0; i < data.nb_scans_valid; i++ )
+    {
+	data.scans[i].timestamp = apps_modem_common_convert_gps_to_utc_time( data.scans[i].timestamp );
+    }
+
+    /* Store the consumption */
+    tracker_ctx.gnss_scan_charge_nAh += data.power_consumption_nah;
+
+    /* Store the scans duration */
+    tracker_ctx.scans_duration = data.navgroup_duration_ms;
+
+    /* timestamp the beginning ot the TX sequence */
+    if( data.timestamp != 0 )
+    {
+	tracker_ctx.scans_timestamp = apps_modem_common_convert_gps_to_utc_time( data.timestamp );
+    }
+    else
+    {
+	tracker_ctx.scans_timestamp = apps_modem_common_get_utc_time( stack_id );
+    }
+    tracker_ctx.start_sequence_timestamp = tracker_ctx.scans_timestamp;
+
+    /* Log results in internal memory */
+    if( tracker_ctx.internal_log_enable )
+    {
+	tracker_store_gnss_in_internal_log( &data, tracker_ctx.scans_timestamp );
+    }
+#endif
+}
+
+/*-------------------------------------------------------------------------
+ *
+ * name:        on_gnss_scan_terminated
+ *
+ * description:
+ *
+ * input:
+ *
+ * output:
+ *
+ *-------------------------------------------------------------------------*/
+static void on_gnss_scan_terminated( smtc_modem_gnss_event_data_terminated_t data )
+{
+      printf("%s %d \n", __func__,__LINE__);
+
+#if 0
+   int32_t                  duty_cycle_status_ms = 0;
+    smtc_modem_status_mask_t modem_status;
+
+    ASSERT_SMTC_MODEM_RC( smtc_modem_get_duty_cycle_status( stack_id, &duty_cycle_status_ms ) );
+    HAL_DBG_TRACE_PRINTF( "Remaining duty cycle %d ms\n", duty_cycle_status_ms );
+
+    /* Led start for user notification */
+    smtc_board_led_pulse( smtc_board_get_led_tx_mask( ), true, LED_PERIOD_MS );
+
+    /* Has tracker moved ? */
+    tracker_ctx.accelerometer_move_history =
+	( tracker_ctx.accelerometer_move_history << 1 ) + is_accelerometer_detected_moved( );
+
+    if( ( data.nb_scans_sent == 0 ) || ( tracker_ctx.scan_priority == TRACKER_NO_PRIORITY ) )
+    {
+	HAL_DBG_TRACE_MSG( "Start Wi-Fi scan\n" );
+	smtc_modem_wifi_scan( stack_id, 0 );
+    }
+    else
+    {
+	if( tracker_app_is_tracker_in_static_mode( ) == true )
+	{
+	    /* Stop Hall Effect sensors while the tracker is static */
+	    smtc_board_hall_effect_enable( false );
+
+	    HAL_DBG_TRACE_MSG( "Switch in static mode\n" );
+	    smtc_modem_gnss_scan_aggregate( stack_id, true );
+	    smtc_modem_gnss_scan( stack_id, SMTC_MODEM_GNSS_MODE_STATIC, tracker_ctx.static_scan_interval );
+
+	    /* Send sensors values in static mode */
+	    smtc_modem_get_status( stack_id, &modem_status );
+	    if( ( modem_status >> SMTC_MODEM_STATUS_JOINED ) == 1 )
+	    {
+		tracker_app_read_and_send_sensors( );
+	    }
+	}
+	else
+	{
+	    HAL_DBG_TRACE_MSG( "Continue in mobile mode\n" );
+	    smtc_modem_gnss_scan_aggregate( stack_id, false );
+	    smtc_modem_gnss_scan( stack_id, SMTC_MODEM_GNSS_MODE_MOBILE, tracker_ctx.mobile_scan_interval );
+	}
+    }
+#endif
+}
+
 
 /*-------------------------------------------------------------------------
  *
@@ -62,20 +201,51 @@ static void on_joined( void )
     /* Stop network research notification */
    led_on(LED_GREEN);
 
-#if phil
-   ASSERT_SMTC_MODEM_RC( smtc_modem_set_class( stack_id, LORAWAN_CLASS ) );
-   modem_class_to_string( LORAWAN_CLASS );
+   /*
+    * Looks like basically a NOP, but found in other examples.
+    */
+   smtc_modem_set_class( stack_id, SMTC_MODEM_CLASS_A);
 
    /* Set the ADR according to the region */
-   tracker_app_set_adr( );
+   set_data_rate_profile( SMTC_MODEM_REGION_US_915 );
 
-   /* Trig Mac command */
-   ASSERT_SMTC_MODEM_RC( smtc_modem_trig_lorawan_mac_request(
-			    stack_id, SMTC_MODEM_LORAWAN_MAC_REQ_LINK_CHECK | SMTC_MODEM_LORAWAN_MAC_REQ_DEVICE_TIME ) );
-
-   smtc_modem_alarm_start_timer( APP_ONE_DAY_IN_SEC );
-#endif
+   smtc_modem_trig_lorawan_mac_request( stack_id,
+					SMTC_MODEM_LORAWAN_MAC_REQ_LINK_CHECK | SMTC_MODEM_LORAWAN_MAC_REQ_DEVICE_TIME );
 }
+
+/*-------------------------------------------------------------------------
+ *
+ * name:        on_link_status
+ *
+ * description:
+ *
+ * input:
+ *
+ * output:
+ *
+ *-------------------------------------------------------------------------*/
+static void on_link_status( smtc_modem_event_mac_request_status_t status, uint8_t margin, uint8_t gw_cnt )
+{
+      printf("%s %d \n", __func__,__LINE__);
+}
+
+/*-------------------------------------------------------------------------
+ *
+ * name:
+ *
+ * description:
+ *
+ * input:
+ *
+ * output:
+ *
+ *-------------------------------------------------------------------------*/
+static void on_lorawan_mac_time( smtc_modem_event_mac_request_status_t status, uint32_t gps_time_s,
+				 uint32_t gps_fractional_s )
+{
+//    apps_modem_common_get_utc_time( stack_id );
+}
+
 
 
 /*-------------------------------------------------------------------------
@@ -102,6 +272,95 @@ static void on_reset( )
    {
       smtc_board_set_ready( true );
    }
+}
+
+/*-------------------------------------------------------------------------
+ *
+ * name:        on_wifi_scan_dopne
+ *
+ * description:
+ *
+ * input:
+ *
+ * output:
+ *
+ *-------------------------------------------------------------------------*/
+
+static void on_wifi_scan_done( smtc_modem_wifi_event_data_scan_done_t data )
+{
+   FROM();
+
+   printk("%s %d (from %p) \n", __func__,__LINE__, __builtin_return_address(0) );
+
+#if 0
+
+   HAL_DBG_TRACE_INFO( "on_wifi_scan_done\n" );
+
+   // Store the consumption
+   tracker_ctx.wifi_scan_charge_nAh += data.power_consumption_nah;
+
+   if( tracker_ctx.internal_log_enable )
+   {
+      tracker_store_wifi_in_internal_log( &data, tracker_ctx.scans_timestamp );
+   }
+#endif
+}
+
+/*-------------------------------------------------------------------------
+ *
+ * name:        on_wifi_scan_terminated
+ *
+ * description:
+ *
+ * input:
+ *
+ * output:
+ *
+ *-------------------------------------------------------------------------*/
+static void on_wifi_scan_terminated( smtc_modem_wifi_event_data_terminated_t data )
+{
+   FROM();
+
+   printk("%s %d (from %p) \n", __func__,__LINE__, __builtin_return_address(0) );
+#if 0
+    int32_t                  duty_cycle_status_ms = 0;
+    smtc_modem_status_mask_t modem_status;
+
+    HAL_DBG_TRACE_INFO( "on_wifi_scan_terminated\n" );
+
+    ASSERT_SMTC_MODEM_RC( smtc_modem_get_duty_cycle_status( stack_id, &duty_cycle_status_ms ) );
+    HAL_DBG_TRACE_PRINTF( "Remaining duty cycle %d ms\n", duty_cycle_status_ms );
+
+    // Led start for user notification
+    smtc_board_led_pulse( smtc_board_get_led_tx_mask( ), true, LED_PERIOD_MS );
+
+    if( ( data.nb_scans_sent == 0 ) || ( tracker_app_is_tracker_in_static_mode( ) == true ) )
+    {
+	HAL_DBG_TRACE_MSG( "No scan results good enough or keep alive frame, sensors values\n" );
+	smtc_modem_get_status( stack_id, &modem_status );
+	if( ( modem_status >> SMTC_MODEM_STATUS_JOINED ) == 1 )
+	{
+	    tracker_app_read_and_send_sensors( );
+	}
+    }
+
+    if( tracker_app_is_tracker_in_static_mode( ) == true )
+    {
+	// Stop Hall Effect sensors while the tracker is static
+	smtc_board_hall_effect_enable( false );
+
+	HAL_DBG_TRACE_MSG( "Switch static mode\n" );
+	smtc_modem_gnss_scan_aggregate( stack_id, true );
+	smtc_modem_gnss_scan( stack_id, SMTC_MODEM_GNSS_MODE_STATIC, tracker_ctx.static_scan_interval );
+    }
+    else
+    {
+	HAL_DBG_TRACE_MSG( "Continue in mobile mode\n" );
+	smtc_modem_gnss_scan_aggregate( stack_id, false );
+	smtc_modem_gnss_scan( stack_id, SMTC_MODEM_GNSS_MODE_MOBILE, tracker_ctx.mobile_scan_interval );
+    }
+#endif
+
 }
 
 /*-------------------------------------------------------------------------
@@ -137,7 +396,7 @@ static void app_start ( void )
       /*
        * Blink red LED periodically.  One for a half-second every 5 seconds.
        */
-      led_blink(LED_GREEN, 500, 5000);
+      led_blink(LED_GREEN, 400, 2500);
 
       /* Start the Join process */
       smtc_modem_join_network( stack_id );
@@ -191,8 +450,6 @@ void semtracker_thread( void *p1, void *p2, void *p3)
    semtracker_msg_t
       msg;
 
-   printk("%s %d (from %p) \n", __func__,__LINE__, __builtin_return_address(0) );
-
    /*
     * Find our radio device driver and store as our 'context'.
     */
@@ -219,8 +476,6 @@ void semtracker_thread( void *p1, void *p2, void *p3)
    }
 
 #if 0
-
-
     /* Init board and peripherals */
     hal_mcu_init( );
     smtc_board_init_periph( );
@@ -228,16 +483,16 @@ void semtracker_thread( void *p1, void *p2, void *p3)
 
     {
        static apps_modem_event_callback_t apps_modem_event_callback = {
-//	  .down_data                 = on_modem_down_data,
+	  .down_data                 = on_down_data,
 	  .joined                    = on_joined,
 	  .reset                     = on_reset,
-//	  .gnss_scan_done            = on_gnss_scan_done,
-//	  .gnss_terminated           = on_gnss_scan_terminated,
-//	  .wifi_scan_done            = on_wifi_scan_done,
-//	  .wifi_terminated           = on_wifi_scan_terminated,
+	  .gnss_scan_done            = on_gnss_scan_done,
+	  .gnss_terminated           = on_gnss_scan_terminated,
+	  .wifi_scan_done            = on_wifi_scan_done,
+	  .wifi_terminated           = on_wifi_scan_terminated,
 //	  .alarm                     = on_alarm_event,
-//	  .lorawan_mac_time          = on_lorawan_mac_time,
-//	  .link_status               = on_link_status,
+	  .lorawan_mac_time          = on_lorawan_mac_time,
+	  .link_status               = on_link_status,
 //	  .gnss_almanac_demod_update = on_gnss_almanac_demod_update,
        };
 
@@ -262,16 +517,12 @@ void semtracker_thread( void *p1, void *p2, void *p3)
 	 */
 	sleep_msecs = smtc_modem_run_engine( );
 
-	TRACE1(TAG_SEMTRACKER_LOOP, sleep_msecs);
-
 	/*
 	 * Wait for the specified time, or for a command to come in.  The engine did return
 	 * a value of 0, which implies wait forevcer to k_msgq_get(), so protect from that.
 	 */
 	if (sleep_msecs) {
-	   HERE();
 	   rc = k_msgq_get(&semtracker_msgq, &msg, K_MSEC( sleep_msecs ));
-	   TRACE_MISC(rc);
 	   if (rc == 0) {
 	      semtracker_msg_handle(&msg);
 	   }
@@ -347,6 +598,30 @@ static void semtracker_msg_handle (semtracker_msg_t *msg)
       /*
        * This command says we should perform a GNSS request.
        */
+       case SEMTRACKER_CMD_GNSS_SCAN:
+
+	  printf("%s %d \n", __func__,__LINE__);
+
+	  TRACE(TAG_SEMTRACKER_GNSS_SCAN_AGGREGATE);
+	  smtc_modem_gnss_scan_aggregate( stack_id, true );
+
+	  TRACE(TAG_SEMTRACKER_GNSS_SCAN);
+	  smtc_modem_gnss_scan( stack_id, SMTC_MODEM_GNSS_MODE_STATIC, 5 );
+
+	  TRACE(TAG_SEMTRACKER_GNSS_SCAN_DONE);
+	  break;
+
+	  /*
+	   * This command says we should perform a WiFi scan
+	   */
+       case SEMTRACKER_CMD_WIFI_SCAN:
+
+	  printf("%s %d \n", __func__,__LINE__);
+
+	  TRACE(TAG_SEMTRACKER_WIFI_SCAN);
+	  smtc_modem_wifi_scan( stack_id, 0);
+
+	  break;
 
       /*
        * This command is just to wake the thread.  NOP other than that.
@@ -550,6 +825,41 @@ static void configure_lorawan_parms( void )
     printk("Region: %s\n", smtc_modem_region_to_str( config.region ));
 }
 
+
+
+/*-------------------------------------------------------------------------
+ *
+ * name:        set_data_rate_profile
+ *
+ * description:
+ *
+ * input:
+ *
+ * output:
+ *
+ *-------------------------------------------------------------------------*/
+static void set_data_rate_profile( uint32_t region )
+{
+   uint8_t
+      profile[SMTC_MODEM_CUSTOM_ADR_DATA_LENGTH],
+      rate;
+   uint32_t
+      i;
+
+   /*
+    * Use a rate of 1 for the US915.  3 for all others.
+    */
+   rate = (region ==  SMTC_MODEM_REGION_US_915 ? 1 : 3);
+
+   for (i=0; i < ARRAY_SIZE(profile); i++) {
+      profile[i] = rate;
+   }
+
+   smtc_modem_adr_set_profile( stack_id, SMTC_MODEM_ADR_PROFILE_CUSTOM, profile );
+   smtc_modem_set_nb_trans( stack_id, 3 );
+}
+
+
 #if 0
 
 static void tracker_app_build_and_send_tracker_settings( const uint8_t* buffer, uint8_t len )
@@ -752,44 +1062,6 @@ static void tracker_app_parse_downlink_frame( uint8_t port, const uint8_t* paylo
     }
 }
 
-static void tracker_app_set_adr( void )
-{
-    /* SF9 = DR3 for EU868 / IN865 / RU864 / AU915 / CN470 /AS923 / KR920 */
-    uint8_t adr_custom_list_freq_SF9_DR3[16] = { 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03,
-						 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03 }; /* 125kHz - SF9 */
-    /* SF9 = DR1 for US915 */
-    uint8_t adr_custom_list_SF9_DR1[16] = { 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-					    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01 }; /* 125kHz - SF9 */
-    uint8_t custom_nb_trans             = 3;
-
-    /* Set the ADR profile once joined */
-    switch( tracker_ctx.lorawan_region )
-    {
-    case SMTC_MODEM_REGION_EU_868:
-    case SMTC_MODEM_REGION_IN_865:
-    case SMTC_MODEM_REGION_RU_864:
-    case SMTC_MODEM_REGION_AU_915:
-    case SMTC_MODEM_REGION_AS_923_GRP1:
-    case SMTC_MODEM_REGION_AS_923_GRP2:
-    case SMTC_MODEM_REGION_AS_923_GRP3:
-    case SMTC_MODEM_REGION_CN_470:
-    case SMTC_MODEM_REGION_CN_470_RP_1_0:
-    case SMTC_MODEM_REGION_KR_920:
-	ASSERT_SMTC_MODEM_RC(
-	    smtc_modem_adr_set_profile( stack_id, SMTC_MODEM_ADR_PROFILE_CUSTOM, adr_custom_list_freq_SF9_DR3 ) );
-	ASSERT_SMTC_MODEM_RC( smtc_modem_set_nb_trans( stack_id, custom_nb_trans ) );
-	break;
-    case SMTC_MODEM_REGION_US_915:
-	ASSERT_SMTC_MODEM_RC(
-	    smtc_modem_adr_set_profile( stack_id, SMTC_MODEM_ADR_PROFILE_CUSTOM, adr_custom_list_SF9_DR1 ) );
-	ASSERT_SMTC_MODEM_RC( smtc_modem_set_nb_trans( stack_id, custom_nb_trans ) );
-	break;
-    default:
-	HAL_DBG_TRACE_ERROR( "Region not supported in this example, could not set custom ADR profile\n" );
-	break;
-    }
-}
-
 static void tracker_app_set_max_tx_power_supported( smtc_modem_region_t region, smtc_modem_sub_region_t sub_region )
 {
     int8_t max_tx_power_supported = 22;
@@ -830,108 +1102,6 @@ static void on_alarm_event( void )
 	stack_id, SMTC_MODEM_LORAWAN_MAC_REQ_LINK_CHECK | SMTC_MODEM_LORAWAN_MAC_REQ_DEVICE_TIME ) );
 }
 
-static void on_modem_down_data( const uint8_t* payload, uint8_t size, smtc_modem_dl_metadata_t metadata,
-				uint8_t remaining_data_nb )
-{
-    if( size != 0 )
-    {
-	HAL_DBG_TRACE_INFO( "Payload size  = %d\n", size );
-	HAL_DBG_TRACE_ARRAY( "Payload", payload, size );
-	tracker_app_parse_downlink_frame( metadata.fport, payload, size );
-    }
-
-    smtc_board_led_pulse( smtc_board_get_led_rx_mask( ), true, LED_PERIOD_MS );
-}
-
-static void on_lorawan_mac_time( smtc_modem_event_mac_request_status_t status, uint32_t gps_time_s,
-				 uint32_t gps_fractional_s )
-{
-    apps_modem_common_get_utc_time( stack_id );
-}
-
-static void on_link_status( smtc_modem_event_mac_request_status_t status, uint8_t margin, uint8_t gw_cnt ) {}
-
-static void on_gnss_scan_done( smtc_modem_gnss_event_data_scan_done_t data )
-{
-    HAL_DBG_TRACE_INFO( "on_gnss_scan_done\n" );
-
-    /* Convert GPS timestamp to UTC timestamp */
-    for( int i = 0; i < data.nb_scans_valid; i++ )
-    {
-	data.scans[i].timestamp = apps_modem_common_convert_gps_to_utc_time( data.scans[i].timestamp );
-    }
-
-    /* Store the consumption */
-    tracker_ctx.gnss_scan_charge_nAh += data.power_consumption_nah;
-
-    /* Store the scans duration */
-    tracker_ctx.scans_duration = data.navgroup_duration_ms;
-
-    /* timestamp the beginning ot the TX sequence */
-    if( data.timestamp != 0 )
-    {
-	tracker_ctx.scans_timestamp = apps_modem_common_convert_gps_to_utc_time( data.timestamp );
-    }
-    else
-    {
-	tracker_ctx.scans_timestamp = apps_modem_common_get_utc_time( stack_id );
-    }
-    tracker_ctx.start_sequence_timestamp = tracker_ctx.scans_timestamp;
-
-    /* Log results in internal memory */
-    if( tracker_ctx.internal_log_enable )
-    {
-	tracker_store_gnss_in_internal_log( &data, tracker_ctx.scans_timestamp );
-    }
-}
-
-static void on_gnss_scan_terminated( smtc_modem_gnss_event_data_terminated_t data )
-{
-    int32_t                  duty_cycle_status_ms = 0;
-    smtc_modem_status_mask_t modem_status;
-
-    ASSERT_SMTC_MODEM_RC( smtc_modem_get_duty_cycle_status( stack_id, &duty_cycle_status_ms ) );
-    HAL_DBG_TRACE_PRINTF( "Remaining duty cycle %d ms\n", duty_cycle_status_ms );
-
-    /* Led start for user notification */
-    smtc_board_led_pulse( smtc_board_get_led_tx_mask( ), true, LED_PERIOD_MS );
-
-    /* Has tracker moved ? */
-    tracker_ctx.accelerometer_move_history =
-	( tracker_ctx.accelerometer_move_history << 1 ) + is_accelerometer_detected_moved( );
-
-    if( ( data.nb_scans_sent == 0 ) || ( tracker_ctx.scan_priority == TRACKER_NO_PRIORITY ) )
-    {
-	HAL_DBG_TRACE_MSG( "Start Wi-Fi scan\n" );
-	smtc_modem_wifi_scan( stack_id, 0 );
-    }
-    else
-    {
-	if( tracker_app_is_tracker_in_static_mode( ) == true )
-	{
-	    /* Stop Hall Effect sensors while the tracker is static */
-	    smtc_board_hall_effect_enable( false );
-
-	    HAL_DBG_TRACE_MSG( "Switch in static mode\n" );
-	    smtc_modem_gnss_scan_aggregate( stack_id, true );
-	    smtc_modem_gnss_scan( stack_id, SMTC_MODEM_GNSS_MODE_STATIC, tracker_ctx.static_scan_interval );
-
-	    /* Send sensors values in static mode */
-	    smtc_modem_get_status( stack_id, &modem_status );
-	    if( ( modem_status >> SMTC_MODEM_STATUS_JOINED ) == 1 )
-	    {
-		tracker_app_read_and_send_sensors( );
-	    }
-	}
-	else
-	{
-	    HAL_DBG_TRACE_MSG( "Continue in mobile mode\n" );
-	    smtc_modem_gnss_scan_aggregate( stack_id, false );
-	    smtc_modem_gnss_scan( stack_id, SMTC_MODEM_GNSS_MODE_MOBILE, tracker_ctx.mobile_scan_interval );
-	}
-    }
-}
-
 static void on_gnss_almanac_demod_update( smtc_modem_almanac_demodulation_event_data_almanac_update_t data )
 {
     if( ( data.status_gps == SMTC_MODEM_GNSS_ALMANAC_UPDATE_STATUS_COMPLETED ) &&
@@ -941,58 +1111,6 @@ static void on_gnss_almanac_demod_update( smtc_modem_almanac_demodulation_event_
     }
 }
 
-static void on_wifi_scan_done( smtc_modem_wifi_event_data_scan_done_t data )
-{
-    HAL_DBG_TRACE_INFO( "on_wifi_scan_done\n" );
-
-    // Store the consumption
-    tracker_ctx.wifi_scan_charge_nAh += data.power_consumption_nah;
-
-    if( tracker_ctx.internal_log_enable )
-    {
-	tracker_store_wifi_in_internal_log( &data, tracker_ctx.scans_timestamp );
-    }
-}
-
-static void on_wifi_scan_terminated( smtc_modem_wifi_event_data_terminated_t data )
-{
-    int32_t                  duty_cycle_status_ms = 0;
-    smtc_modem_status_mask_t modem_status;
-
-    HAL_DBG_TRACE_INFO( "on_wifi_scan_terminated\n" );
-
-    ASSERT_SMTC_MODEM_RC( smtc_modem_get_duty_cycle_status( stack_id, &duty_cycle_status_ms ) );
-    HAL_DBG_TRACE_PRINTF( "Remaining duty cycle %d ms\n", duty_cycle_status_ms );
-
-    // Led start for user notification
-    smtc_board_led_pulse( smtc_board_get_led_tx_mask( ), true, LED_PERIOD_MS );
-
-    if( ( data.nb_scans_sent == 0 ) || ( tracker_app_is_tracker_in_static_mode( ) == true ) )
-    {
-	HAL_DBG_TRACE_MSG( "No scan results good enough or keep alive frame, sensors values\n" );
-	smtc_modem_get_status( stack_id, &modem_status );
-	if( ( modem_status >> SMTC_MODEM_STATUS_JOINED ) == 1 )
-	{
-	    tracker_app_read_and_send_sensors( );
-	}
-    }
-
-    if( tracker_app_is_tracker_in_static_mode( ) == true )
-    {
-	// Stop Hall Effect sensors while the tracker is static
-	smtc_board_hall_effect_enable( false );
-
-	HAL_DBG_TRACE_MSG( "Switch static mode\n" );
-	smtc_modem_gnss_scan_aggregate( stack_id, true );
-	smtc_modem_gnss_scan( stack_id, SMTC_MODEM_GNSS_MODE_STATIC, tracker_ctx.static_scan_interval );
-    }
-    else
-    {
-	HAL_DBG_TRACE_MSG( "Continue in mobile mode\n" );
-	smtc_modem_gnss_scan_aggregate( stack_id, false );
-	smtc_modem_gnss_scan( stack_id, SMTC_MODEM_GNSS_MODE_MOBILE, tracker_ctx.mobile_scan_interval );
-    }
-}
 #endif
 
 #define SEMTRACKER_STACKSIZE (2048)
