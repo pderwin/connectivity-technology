@@ -19,6 +19,10 @@ static led_t leds[] = {
    {
       .id   = LED_GREEN,
       .gpio = GPIO_DT_SPEC_GET(DT_NODELABEL(ledg), gpios),
+   },
+   {
+      .id   = LED_ALERT,
+      .gpio = GPIO_DT_SPEC_GET(DT_ALIAS(alert), gpios),
    }
 };
 
