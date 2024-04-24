@@ -1,5 +1,4 @@
 #include <zephyr/kernel.h>
-#include <zephyr/drivers/trace.h>
 #include "buttons_internal.h"
 #include "priority.h"
 #include "semtracker.h"
@@ -48,11 +47,8 @@ static void btn_init (button_t *btn)
 
 static void button_irq_callback(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
-   TRACE1(TAG_BUTTON_IRQ, pins);
-
    if (pins) {
-      TRACE(TAG_BTN_SEND);
-      semtracker_cmd(SEMTRACKER_CMD_BUTTON, pins);
+      semtracker_cmd(SEMTRACKER_CMD_WIFI_SCAN, pins);
    }
 }
 
