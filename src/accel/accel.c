@@ -66,7 +66,7 @@ static void accel_callback (const struct device *device, const struct sensor_tri
     */
    led_blink_once(LED_GREEN, 500);
 
-   rc = smtc_modem_request_uplink(0, 111, 1, "Hello World", 11);
+//   rc = smtc_modem_request_uplink(0, 111, 1, "Hello World", 11);
 
    /*
     * Wake the semtracker thread.
