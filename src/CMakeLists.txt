@@ -18,6 +18,7 @@ zephyr_library_sources(
 )
 
 add_subdirectory(accel)
+add_subdirectory(alert)
 add_subdirectory(bluetooth)
 add_subdirectory(buttons)
 add_subdirectory(driveway_sensor)
