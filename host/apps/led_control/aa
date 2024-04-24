@@ -1,0 +1,23 @@
+#!/bin/sh
+
+BUILD=./build
+
+# rm -rf $BUILD
+
+if [ ! -d $BUILD ] ; then
+    cmake -B $BUILD .
+fi
+
+clear
+cmake --build $BUILD --parallel=2
+rc=$?
+
+if [ $rc -ne 0 ] ; then
+    exit 1;
+fi
+
+./bb
+
+date
+set-title led_control: build complete
+countdown 30
