@@ -1,5 +1,5 @@
 #include <zephyr/kernel.h>
-#include "lr1110_transceiver_0308.h"
+#include "lr1110_transceiver_0401.h"
 #include "lr11xx_firmware_update.h"
 #include "lr11xx_drv.h"    // zephyr driver interfaces
 #include "lr11xx_hal.h"    // SMTC specified HAL layer
