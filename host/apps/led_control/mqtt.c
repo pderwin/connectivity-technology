@@ -146,8 +146,6 @@ static void mqtt_disconnect (void)
    int
       rc = 0;
 
-   printf("%s %d (from %p) \n", __func__,__LINE__, __builtin_return_address(0) );
-
    rc = MQTTClient_disconnect(c, 0);
 
    if (rc != MQTTCLIENT_SUCCESS) {
@@ -169,21 +167,6 @@ void mqtt_publish (char *topic_name, char *payload, uint32_t payload_len)
    MQTTClient_deliveryToken
       token;
 
-#if 0
-   {
-      uint32_t
-	 i;
-      printf("topic: '%s' \n", topic_name);
-      printf("%s %d len: %d \n---\n", __func__,__LINE__, payload_len);
-
-      for (i=0; i<payload_len; i++) {
-	 printf("%c", payload[i]);
-      }
-      printf("\n---\n");
-   }
-#endif
-
-
     pubmsg.payload    = payload;
     pubmsg.payloadlen = payload_len;
 
@@ -198,8 +181,4 @@ void mqtt_publish (char *topic_name, char *payload, uint32_t payload_len)
       printf("Failed to publish message\n");
       exit(1);
    }
-
-//   printf("Waiting for publication ...\n");
-//   rc = MQTTClient_waitForCompletion(c, token, TIMEOUT);
-
 }

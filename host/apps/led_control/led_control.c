@@ -63,7 +63,5 @@ int main(int argc, char *argv[])
       }
    }
 
-   printf("Home Security exit\n");
-
    exit(0);
 }
