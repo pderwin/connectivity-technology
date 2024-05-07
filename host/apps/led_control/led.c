@@ -50,19 +50,7 @@ void led_msg (char *address, uint32_t on_off)
 
    data_str = base64_encode(on_off_byte, sizeof(on_off_byte), &data_len);
 
-//   data_str = "AgAHAAgBAwADAAF0Cg==";
-//   data_len = strlen(data_str);
-
    sprintf(payload + strlen(payload), "\"data\": \"%*s\"}", data_len, data_str);
-#if 0
-   payload_append("   \"object\": {");
-   payload_append("     \"temperatureSensor\": {\"1\": 25},");
-   payload_append("     \"humiditySensor\": {\"1\": 32}");
-   payload_append("     }");
-#endif
-
-//   payload_append("}");
-//   sprintf(payload + strlen(payload), "\"");
 
    topic_name = "application/3bdb1cb2-ed86-4b67-a0cd-e1113189aa3c/device/ff00000000000b03/command/down";
 
