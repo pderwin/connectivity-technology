@@ -3,10 +3,6 @@
 #include "priority.h"
 #include "semtracker.h"
 
-#define BUTTONS_STACK_SIZE (1024)
-
-#define CNT_DEBOUNCE (5)
-
 static button_t
     btn1 = {
        .gpio = GPIO_DT_SPEC_GET(DT_NODELABEL(btn1), gpios),
@@ -45,13 +41,24 @@ static void btn_init (button_t *btn)
    }
 }
 
+/*-------------------------------------------------------------------------
+ *
+ * name:        button_irq_callback
+ *
+ * description: called when either button is depressed.  The pins value
+ *              can be used to determine which button it was when needed.
+ *
+ * input:
+ *
+ * output:
+ *
+ *-------------------------------------------------------------------------*/
 static void button_irq_callback(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
    if (pins) {
       semtracker_cmd(SEMTRACKER_CMD_WIFI_SCAN, pins);
    }
 }
-
 
 /*-------------------------------------------------------------------------
  *
