@@ -32,7 +32,7 @@ int ct_main(void)
 
    buttons_init();
 
-//   bluetooth_init();
+   bluetooth_init();
 
    semtracker_init();
 
