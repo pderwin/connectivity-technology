@@ -2,7 +2,6 @@
  * Zephyr includes
  */
 #include <zephyr/kernel.h>
-#include <zephyr/drivers/trace.h>
 
 /*
  * Semtech includes.
@@ -288,8 +287,6 @@ static void on_reset( )
 
 static void on_wifi_scan_done( smtc_modem_wifi_event_data_scan_done_t data )
 {
-   FROM();
-
    printk("%s %d (from %p) \n", __func__,__LINE__, __builtin_return_address(0) );
 
 #if 0
@@ -319,8 +316,6 @@ static void on_wifi_scan_done( smtc_modem_wifi_event_data_scan_done_t data )
  *-------------------------------------------------------------------------*/
 static void on_wifi_scan_terminated( smtc_modem_wifi_event_data_terminated_t data )
 {
-   FROM();
-
    printk("%s %d (from %p) \n", __func__,__LINE__, __builtin_return_address(0) );
 #if 0
     int32_t                  duty_cycle_status_ms = 0;
@@ -602,13 +597,8 @@ static void semtracker_msg_handle (semtracker_msg_t *msg)
 
 	  printf("%s %d \n", __func__,__LINE__);
 
-	  TRACE(TAG_SEMTRACKER_GNSS_SCAN_AGGREGATE);
 	  smtc_modem_gnss_scan_aggregate( stack_id, true );
-
-	  TRACE(TAG_SEMTRACKER_GNSS_SCAN);
 	  smtc_modem_gnss_scan( stack_id, SMTC_MODEM_GNSS_MODE_STATIC, 5 );
-
-	  TRACE(TAG_SEMTRACKER_GNSS_SCAN_DONE);
 	  break;
 
 	  /*
@@ -618,9 +608,7 @@ static void semtracker_msg_handle (semtracker_msg_t *msg)
 
 	  printf("%s %d \n", __func__,__LINE__);
 
-	  TRACE(TAG_SEMTRACKER_WIFI_SCAN);
 	  smtc_modem_wifi_scan( stack_id, 0);
-
 	  break;
 
       /*
