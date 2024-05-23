@@ -53,6 +53,8 @@ void led_msg (char *address, uint32_t on_off)
    sprintf(payload + strlen(payload), "\"data\": \"%*s\"}", data_len, data_str);
 
    topic_name = "application/3bdb1cb2-ed86-4b67-a0cd-e1113189aa3c/device/ff00000000000b03/command/down";
+//   topic_name = "application/#/device/ff00000000000b03/command/down";
+//   topic_name = "application/+/device/ff00000000000b03/command/down";
 
    mqtt_publish(topic_name, payload, strlen(payload));
 }
