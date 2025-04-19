@@ -10,6 +10,9 @@
 
 static event_t event;
 
+void
+    driveway_alert(void);
+
 /*-------------------------------------------------------------------------
  *
  * name:        event_init
@@ -103,11 +106,13 @@ void event_process (void)
 	  print_cur_time();
 	  printf("DRIVEWAY_SENSOR: %s \n", event.payload);
 
+	  driveway_alert();
+
 	  /*
 	   * Send request to the camera interaction thread to have it pull the
 	   * correct footage from the camera to cover our time period
 	   */
-	  camera_download(time(NULL));
+//	  camera_download(time(NULL));
 	  break;
 
 	  /*

@@ -35,6 +35,7 @@ ADD_EXECUTABLE( home_security
   base64.c
   camera.c
   curl.c
+  driveway.c
   event.c
   file_entry.c
   home_security.c
