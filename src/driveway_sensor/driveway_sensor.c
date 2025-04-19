@@ -12,13 +12,33 @@ extern void semtracker_thread_wakeup (void);
 
 static const struct gpio_dt_spec driveway_sensor = GPIO_DT_SPEC_GET(DT_ALIAS(driveway_sensor), gpios);
 
+void driveway_sensor_alarm (void)
+{
+   static char
+      *alarm_str = "drvw: alrm";
+   uint32_t
+      rc;
+
+   rc = smtc_modem_request_uplink(0,                   // stack_id
+				  70,                  // f_port
+				  1,                   // confirmed,
+				  alarm_str,           // payload
+				  strlen(alarm_str) ); // payload length
+   printk("%s %d rc: %d \n", __func__,__LINE__, rc);
+
+
+   /*
+    * The radio may be in sleep mode, so wake it.
+    */
+   semtracker_thread_wakeup ();
+}
+
 static void driveway_sensor_thread (void *p1, void *p2, void *p3)
 {
    uint32_t
       last_ds    = 1, // generate message on first time through loop
       last_msg_uptime_secs = 0,
       ds,
-      rc,
       uptime_secs;
 
    gpio_pin_configure_dt(&driveway_sensor, GPIO_INPUT);
@@ -54,13 +74,13 @@ static void driveway_sensor_thread (void *p1, void *p2, void *p3)
 	     * Send message to port 70 when the line drops to low.
 	     */
 	    if (ds == 0) {
-	       rc = smtc_modem_request_uplink(0, 70, 1, "driveway_sensor_0: alarm", 24);
+
+	       driveway_sensor_alarm();
 
 	       /*
 		* The radio may be in sleep mode, so wake it.
 		*/
 	       semtracker_thread_wakeup ();
-	       printk("%s %d rc: %d \n", __func__,__LINE__, rc);
 	    }
 	 }
       }

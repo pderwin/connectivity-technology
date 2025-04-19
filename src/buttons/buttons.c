@@ -56,7 +56,7 @@ static void btn_init (button_t *btn)
 static void button_irq_callback(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
    if (pins) {
-      semtracker_cmd(SEMTRACKER_CMD_WIFI_SCAN, pins);
+      semtracker_cmd(SEMTRACKER_CMD_SIMULATE_DRIVEWAY_SENSOR, pins);
    }
 }
 

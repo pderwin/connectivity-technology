@@ -575,6 +575,7 @@ void semtracker_thread( void *p1, void *p2, void *p3)
     } // while(1)
 }
 
+void driveway_sensor_alarm (void);
 
 /*-------------------------------------------------------------------------
  *
@@ -590,6 +591,7 @@ void semtracker_thread( void *p1, void *p2, void *p3)
 static void semtracker_msg_handle (semtracker_msg_t *msg)
 {
    switch(msg->cmd) {
+
       /*
        * This command says we should perform a GNSS request.
        */
@@ -611,10 +613,18 @@ static void semtracker_msg_handle (semtracker_msg_t *msg)
 	  smtc_modem_wifi_scan( stack_id, 0);
 	  break;
 
-      /*
-       * This command is just to wake the thread.  NOP other than that.
-       */
+	  /*
+	   * This command is just to wake the thread.  NOP other than that.
+	   */
        case SEMTRACKER_CMD_WAKEUP:
+	  break;
+
+	  /*
+	   * simulate a driveway sensor toggle to be able to debug transmit of Lora
+	   * packet and the host utilities
+	   */
+       case SEMTRACKER_CMD_SIMULATE_DRIVEWAY_SENSOR:
+	  driveway_sensor_alarm();
 	  break;
 
        default:
