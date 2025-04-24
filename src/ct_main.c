@@ -1,5 +1,6 @@
 #include <zephyr/kernel.h>
 #include <zephyr/init.h>
+#include <zephyr/version.h>
 #include "accel.h"
 #include "buttons.h"
 #include "driveway_sensor.h"
@@ -26,13 +27,18 @@ void wifi_thread_start (void);
  *-------------------------------------------------------------------------*/
 int ct_main(void)
 {
+   printk("Tracker Init\n");
+   printk("Zephyr version: %s\n", KERNEL_VERSION_STRING);
+
    driveway_sensor_init();
 
    led_init();
 
    buttons_init();
 
+#if CONFIG_BT
    bluetooth_init();
+#endif
 
    semtracker_init();
 
