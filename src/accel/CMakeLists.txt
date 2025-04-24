@@ -6,4 +6,4 @@ zephyr_library_sources(
 
 
 zephyr_include_directories(".")
-zephyr_include_directories("$ENV{ZEPHYR_BASE}/drivers/sensor/lis2dh")
+zephyr_include_directories("$ENV{ZEPHYR_BASE}/drivers/sensor/st/lis2dh")
