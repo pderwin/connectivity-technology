@@ -11,7 +11,9 @@
 
 static uint32_t settings_inited;
 
+#if CONFIG_NVS
 static struct nvs_fs fs;
+#endif
 
 /*-------------------------------------------------------------------------
  *
@@ -26,6 +28,7 @@ static struct nvs_fs fs;
  *-------------------------------------------------------------------------*/
 void settings_init (void)
 {
+#if CONFIG_NVS
    int
       rc = 0;
    struct flash_pages_info
@@ -66,6 +69,7 @@ void settings_init (void)
       printk("Flash Init failed.  rc: %d\n", rc);
       return;
    }
+#endif
 
    settings_inited = 1;
 }
@@ -87,16 +91,20 @@ int32_t settings_read( settings_id_e id, void *dst, uint32_t size )
    int
       rc;
 
+   (void) rc;
+
    settings_init();
 
    /*
     * Try to read the ID.
     */
+#if CONFIG_NVS
    rc = nvs_read(&fs, id, dst, size);
 
    if (rc != size) {
       printk("%s: error reading id: %d size: %d rc: %d \n", __func__, id, size, rc);
    }
+#endif
 
    return 0;
 }
@@ -117,13 +125,17 @@ int32_t settings_write( settings_id_e id, const void *src, uint32_t size )
    int
       rc;
 
+   (void) rc;
+
    settings_init();
 
+#if CONFIG_NVS
    rc = nvs_write(&fs, id, src, size );
 
    if (rc != size) {
       printk("%s: error reading id: %d size: %d rc: %d \n", __func__, id, size, rc);
    }
+#endif
 
  return 0;
 }
